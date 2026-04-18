@@ -116,6 +116,9 @@ impl GameTransport for MockTransport {
     }
 
     async fn send_reliable(&self, client_id: ClientId, data: &[u8]) -> Result<(), TransportError> {
+        if !self.connected_clients.lock().unwrap().contains(&client_id) {
+            return Err(TransportError::ClientNotConnected(client_id));
+        }
         if data.len() > 65535 {
             return Err(TransportError::PayloadTooLarge {
                 size: data.len(),
@@ -372,7 +375,9 @@ mod tests {
             // Stage 1: Poll Network
             let mut events = transport.poll_events().await;
             if tick % 100 == 0 {
-                events.push(NetworkEvent::ClientConnected(ClientId(tick)));
+                let cid = ClientId(tick);
+                transport.connect(cid);
+                events.push(NetworkEvent::ClientConnected(cid));
             }
 
             // Stage 2 & 3: Decode & Apply

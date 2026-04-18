@@ -25,7 +25,7 @@ fix:
 # Run all unit and integration tests
 [group('test')]
 test:
-    cargo nextest run --workspace
+    cargo nextest run --workspace --profile ci
 
 # Run security audits (licenses, advisories, vulnerabilities)
 [group('security')]
@@ -77,7 +77,7 @@ changelog:
 # Usage: just release 0.2.0
 [group('release')]
 release version: check-all
-    sed -i 's/^version = ".*"/version = "{{version}}"/' Cargo.toml
+    sed -i '0,/^version = ".*"/s//version = "{{version}}"/' Cargo.toml
     git cliff --tag v{{version}} -o CHANGELOG.md
     git add Cargo.toml CHANGELOG.md
     git commit -m "chore(release): prepare for v{{version}}"

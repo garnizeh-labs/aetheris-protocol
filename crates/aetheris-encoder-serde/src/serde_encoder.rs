@@ -244,8 +244,7 @@ impl Encoder for SerdeEncoder {
     }
 
     fn max_encoded_size(&self) -> usize {
-        // Safe upper bound for P1: MTU (1200)
-        1200
+        aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE
     }
 }
 
