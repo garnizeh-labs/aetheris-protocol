@@ -6,7 +6,7 @@ Binary contracts, lifecycle management, and communication traits for the Aetheri
 
 In a 60Hz authoritative simulation, the network protocol is not just a data format — it is the single source of truth. **Aetheris Protocol** provides the high-performance, media-agnostic contracts that allow the client and server to synchronize massive world states with sub-millisecond overhead. It handles the extraction of ECS deltas, high-frequency replication, and message reassembly across unreliable UDP channels.
 
-If you're here to study how a browser-native multiplayer engine communicates under real pressure, the Aetheris Protocol is the architectural manifesto of the wire.
+This repository serves as the definitive architectural manifesto of the Aetheris wire format. It decouples the engine's core logic from specific networking implementations, allowing the protocol to evolve from rapid-iteration development to high-density production bit-packing without touching the simulation core.
 
 > **[Read the Architecture Design Document](docs/PROTOCOL_DESIGN.md)** — traits, encoders, and wire format specifications.
 >
@@ -19,6 +19,14 @@ If you're here to study how a browser-native multiplayer engine communicates und
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/garnizeh-labs/aetheris-protocol/pulls)
+
+## Workspace Components
+
+The protocol is split into highly focused crates to ensure lean builds and clear isolation:
+
+- **[`aetheris-protocol`](crates/aetheris-protocol)**: The core engine contracts. Defines the "Trait Triad" (`WorldState`, `GameTransport`, `Encoder`) and the cryptographic Merkle Hash Chain used for entity integrity.
+- **[`aetheris-encoder-serde`](crates/aetheris-encoder-serde)**: A rapid-iteration `Encoder` implementation using MessagePack (`rmp-serde`). Optimized for schema flexibility during development.
+- **[`aetheris-encoder-bitpack`](crates/aetheris-encoder-bitpack)**: A high-performance Phase 3 `Encoder`. Uses custom bit-packing for maximum data density and minimal MTU footprint in production.
 
 ## Quickstart
 
@@ -43,7 +51,6 @@ just fix
 | `just fix` | **Lint** | Automatically formats code and applies non-breaking clippy fixes. |
 | `just udeps` | **Lint** | Checks for unused dependencies (requires pinned nightly). |
 | `just docs` | **Doc** | Generates the official API documentation. |
-| `just release` | **Deploy** | Bumps version, updates CHANGELOG, and prepares the release commit. |
 
 For a full list of commands, run `just --list`.
 
@@ -54,6 +61,14 @@ The Aetheris Protocol is built on three core trait facades that isolate the engi
 1.  **`GameTransport`**: Abstract network layer handling reliable/unreliable datagrams and event polling. Gated for WASM compat (`?Send` futures).
 2.  **`WorldState`**: The ECS bridge. Translates protocol-level `NetworkId`s to local ECS entities and extracts high-frequency replication deltas.
 3.  **`Encoder`**: The serialization engine. Supports everything from rapid-iteration `rmp-serde` to Phase 3 custom bit-packing.
+
+## Automated Release Workflow
+
+This repository uses **`release-plz`** to automate versioning and changelog management.
+
+- **Development**: All changes are merged into `main` using **Conventional Commits** (e.g., `feat: ...`, `fix: ...`).
+- **Release PR**: On every push to `main`, `release-plz` creates or updates a "Release PR" that bumps versions in `Cargo.toml` and updates `CHANGELOG.md`.
+- **Finalizing**: Merging the Release PR automatically triggers a GitHub Release and publishes the updated crates to the registry.
 
 ## Documentation Index
 
