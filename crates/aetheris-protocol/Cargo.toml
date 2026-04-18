@@ -25,4 +25,4 @@ grpc = ["dep:tonic", "dep:prost"]
 tokio = { workspace = true, features = ["rt", "macros"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tonic = { workspace = true, features = ["transport"] }
+tonic = { workspace = true, optional = true, features = ["transport"] }

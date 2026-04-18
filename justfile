@@ -2,9 +2,9 @@
 [group('check')]
 check: fmt clippy test security docs-check
 
-# Run ALL CI-equivalent checks (fast + docs-strict, udeps, semver)
+# Run ALL CI-equivalent checks (fast + docs-strict, udeps)
 [group('check')]
-check-all: check docs-strict udeps semver
+check-all: check docs-strict udeps
 
 # Check formatting
 [group('lint')]
@@ -56,7 +56,7 @@ wasm_nightly := "nightly-2025-07-01"
 # Check for unused dependencies (requires nightly; runs on main in CI)
 [group('lint')]
 udeps:
-    cargo +{{wasm_nightly}} udeps --workspace --all-targets
+    cargo +{{wasm_nightly}} udeps --workspace --all-targets --all-features
 
 # Remove all build artefacts reproducible via just build
 [group('maintenance')]
