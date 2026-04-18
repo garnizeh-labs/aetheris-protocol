@@ -4,7 +4,7 @@ use crate::types::{ClientId, ComponentKind, NetworkId};
 
 /// An event representing a fragment of a larger message.
 /// Used for MTU stability to prevent packet drops and enable reassembly.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FragmentedEvent {
     /// Unique identifier for the fragmented message.
     pub message_id: u32,
@@ -19,7 +19,7 @@ pub struct FragmentedEvent {
 
 /// An event representing a change to a single component on a single entity.
 /// Produced by `WorldState::extract_deltas()` on the server.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplicationEvent {
     /// Which entity changed.
     pub network_id: NetworkId,
@@ -35,7 +35,7 @@ pub struct ReplicationEvent {
 
 /// An inbound update to be applied to the ECS.
 /// Produced by `Encoder::decode()` on the receiving end.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ComponentUpdate {
     /// The entity to update.
     pub network_id: NetworkId,
@@ -49,7 +49,7 @@ pub struct ComponentUpdate {
 }
 
 /// Events produced by `GameTransport::poll_events()`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum NetworkEvent {
     /// A new client has connected and been assigned a `ClientId`.
     ClientConnected(ClientId),
@@ -130,7 +130,7 @@ pub enum NetworkEvent {
 
 /// A restricted view of `NetworkEvent` for over-the-wire transport.
 /// Prevents local-only variants (like `ClientConnected`) from being sent/received.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireEvent {
     /// A heartbeat ping.
     Ping {
@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_event_sizes_and_derives() {
         let ev = NetworkEvent::ClientConnected(ClientId(1));
-        assert!(matches!(ev, NetworkEvent::ClientConnected(ClientId(1))));
+        assert_eq!(ev, NetworkEvent::ClientConnected(ClientId(1)));
 
         let re = ReplicationEvent {
             network_id: NetworkId(1),
@@ -187,5 +187,14 @@ mod tests {
             tick: 0,
         };
         assert_eq!(re.payload.len(), 3);
+        assert_eq!(
+            re,
+            ReplicationEvent {
+                network_id: NetworkId(1),
+                component_kind: ComponentKind(0),
+                payload: vec![1, 2, 3],
+                tick: 0,
+            }
+        );
     }
 }

@@ -21,7 +21,7 @@ pub struct MockTransport {
     /// Outbound reliable packets accumulated per client.
     pub per_client_reliable: Mutex<HashMap<ClientId, Vec<Vec<u8>>>>,
     /// Inbound events to emit on next `poll_events`.
-    pub inbound_queue: VecDeque<NetworkEvent>,
+    pub inbound_queue: Mutex<VecDeque<NetworkEvent>>,
 }
 
 impl MockTransport {
@@ -32,8 +32,11 @@ impl MockTransport {
     }
 
     /// Injects an event into the inbound queue to be read by the next `poll_events`.
-    pub fn inject_event(&mut self, event: NetworkEvent) {
-        self.inbound_queue.push_back(event);
+    ///
+    /// # Panics
+    /// Panics if the internal mutex is poisoned.
+    pub fn inject_event(&self, event: NetworkEvent) {
+        self.inbound_queue.lock().unwrap().push_back(event);
     }
 
     /// Takes all unreliable packets meant for a client.
@@ -71,10 +74,10 @@ impl GameTransport for MockTransport {
         client_id: ClientId,
         data: &[u8],
     ) -> Result<(), TransportError> {
-        if data.len() > 1200 {
+        if data.len() > crate::MAX_SAFE_PAYLOAD_SIZE {
             return Err(TransportError::PayloadTooLarge {
                 size: data.len(),
-                max: 1200,
+                max: crate::MAX_SAFE_PAYLOAD_SIZE,
             });
         }
         self.per_client_unreliable
@@ -103,13 +106,16 @@ impl GameTransport for MockTransport {
     }
 
     async fn broadcast_unreliable(&self, data: &[u8]) -> Result<(), TransportError> {
-        if data.len() > 1200 {
+        if data.len() > crate::MAX_SAFE_PAYLOAD_SIZE {
             return Err(TransportError::PayloadTooLarge {
                 size: data.len(),
-                max: 1200,
+                max: crate::MAX_SAFE_PAYLOAD_SIZE,
             });
         }
         let mut map = self.per_client_unreliable.lock().unwrap();
+        // The mock should know about connected clients even if they haven't sent anything yet.
+        // If the map is empty, nobody receives the broadcast.
+        // We assume clients are added to the map upon connection.
         for queue in map.values_mut() {
             queue.push(data.to_vec());
         }
@@ -117,7 +123,8 @@ impl GameTransport for MockTransport {
     }
 
     async fn poll_events(&mut self) -> Vec<NetworkEvent> {
-        self.inbound_queue.drain(..).collect()
+        let mut queue = self.inbound_queue.lock().unwrap();
+        queue.drain(..).collect()
     }
 
     async fn connected_client_count(&self) -> usize {
@@ -193,11 +200,19 @@ impl WorldState for MockWorldState {
         self.reverse_bimap.get(&local_id).copied()
     }
 
+    /// Extracts all pending deltas from the world.
+    ///
+    /// # Panics
+    /// Panics if the internal mutex is poisoned.
     fn extract_deltas(&mut self) -> Vec<ReplicationEvent> {
         let mut queued = self.pending_deltas.lock().unwrap();
         std::mem::take(&mut *queued)
     }
 
+    /// Applies updates to the mock world.
+    ///
+    /// # Panics
+    /// Panics if the internal mutex is poisoned.
     fn apply_updates(&mut self, updates: &[(ClientId, ComponentUpdate)]) {
         self.applied_updates
             .lock()
@@ -237,7 +252,8 @@ impl MockEncoder {
 
 impl Encoder for MockEncoder {
     fn encode(&self, event: &ReplicationEvent, buffer: &mut [u8]) -> Result<usize, EncodeError> {
-        let required = 1 + event.payload.len();
+        // Simple encoding for mock round-trip: Sentinel(1) + NetworkId(8) + ComponentKind(2) + Tick(8) + Payload(n)
+        let required = 1 + 8 + 2 + 8 + event.payload.len();
         if buffer.len() < required {
             return Err(EncodeError::BufferOverflow {
                 needed: required,
@@ -245,12 +261,15 @@ impl Encoder for MockEncoder {
             });
         }
         buffer[0] = Self::MOCK_SENTINEL;
-        buffer[1..required].copy_from_slice(&event.payload);
+        buffer[1..9].copy_from_slice(&event.network_id.0.to_le_bytes());
+        buffer[9..11].copy_from_slice(&event.component_kind.0.to_le_bytes());
+        buffer[11..19].copy_from_slice(&event.tick.to_le_bytes());
+        buffer[19..required].copy_from_slice(&event.payload);
         Ok(required)
     }
 
     fn decode(&self, buffer: &[u8]) -> Result<ComponentUpdate, EncodeError> {
-        if buffer.is_empty() {
+        if buffer.len() < 19 {
             return Err(EncodeError::MalformedPayload { offset: 0 });
         }
         if buffer[0] == Self::MOCK_ERROR_BYTE {
@@ -259,12 +278,16 @@ impl Encoder for MockEncoder {
         if buffer[0] != Self::MOCK_SENTINEL {
             return Err(EncodeError::MalformedPayload { offset: 0 });
         }
-        // Dummy values just to satisfy type boundaries.
+
+        let network_id = u64::from_le_bytes(buffer[1..9].try_into().unwrap());
+        let component_kind = u16::from_le_bytes(buffer[9..11].try_into().unwrap());
+        let tick = u64::from_le_bytes(buffer[11..19].try_into().unwrap());
+
         Ok(ComponentUpdate {
-            network_id: NetworkId(1),
-            component_kind: ComponentKind(0),
-            payload: buffer[1..].to_vec(),
-            tick: 0,
+            network_id: NetworkId(network_id),
+            component_kind: ComponentKind(component_kind),
+            payload: buffer[19..].to_vec(),
+            tick,
         })
     }
     fn encode_event(&self, _event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
@@ -284,7 +307,7 @@ impl Encoder for MockEncoder {
         Err(EncodeError::MalformedPayload { offset: 0 })
     }
     fn max_encoded_size(&self) -> usize {
-        1201
+        crate::MAX_SAFE_PAYLOAD_SIZE
     }
 }
 

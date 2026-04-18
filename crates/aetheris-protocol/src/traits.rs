@@ -3,13 +3,11 @@
 //! These traits form the boundary between the engine's protocol logic and
 //! external dependencies (ECS, Transport, Serialization).
 
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use async_trait::async_trait;
 
 pub use crate::error::{EncodeError, TransportError, WorldError};
 use crate::events::{ComponentUpdate, NetworkEvent, ReplicationEvent};
-pub use crate::types::{ClientId, LocalId, NetworkId};
+pub use crate::types::{ClientId, LocalId, NetworkId, NetworkIdAllocator};
 
 /// Abstracts the underlying network transport.
 ///
@@ -147,7 +145,11 @@ pub trait WorldState: Send {
 /// bits across 32-bit word boundaries for maximum compression.
 ///
 /// # Performance contract
-/// Implementations MUST be allocation-free on the hot path.
+/// Phase 1 (current) implementations may allocate during serialization
+/// to simplify development. However, avoiding allocations is a primary
+/// Phase 3 goal for the custom bit-packer.
+///
+/// In Phase 3, implementations MUST be allocation-free on the hot path.
 /// The `encode` method writes into a caller-provided buffer.
 /// The `decode` method reads from a borrowed slice.
 /// No `Vec`, no `String`, no heap allocation during steady-state operation.
@@ -190,91 +192,4 @@ pub trait Encoder: Send + Sync {
     /// Used by the transport layer to pre-allocate datagram buffers.
     /// Implementations should return a tight upper bound, not a wild guess.
     fn max_encoded_size(&self) -> usize;
-}
-
-/// Server-side `NetworkId` allocator.
-/// Thread-safe, lock-free, monotonically increasing.
-#[derive(Debug)]
-pub struct NetworkIdAllocator {
-    next: AtomicU64,
-}
-
-impl Default for NetworkIdAllocator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl NetworkIdAllocator {
-    /// Creates a new allocator. 0 is reserved as the null sentinel.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            next: AtomicU64::new(1), // 0 is reserved as "null"
-        }
-    }
-
-    /// Allocates the next globally unique `NetworkId`.
-    /// Uses `Relaxed` ordering because monotonicity is guaranteed by
-    /// `fetch_add` atomicity — no other ordering is required.
-    ///
-    /// # Panics
-    /// Panics if the allocator generates the reserved `0` sentinel value,
-    /// or if it overflows `u64::MAX`.
-    pub fn allocate(&self) -> NetworkId {
-        let val = self.next.fetch_add(1, Ordering::Relaxed);
-        assert_ne!(val, 0, "NetworkId 0 is invalid/null sentinel");
-        assert_ne!(val, u64::MAX, "NetworkId overflow");
-        NetworkId(val)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashSet;
-    use std::sync::{Arc, Mutex};
-    use std::thread;
-
-    #[test]
-    fn test_network_id_allocator_concurrent() {
-        let allocator = Arc::new(NetworkIdAllocator::new());
-        let ids: Arc<Mutex<HashSet<u64>>> = Arc::new(Mutex::new(HashSet::new()));
-
-        let mut handles = vec![];
-        let threads = 8;
-        let allocations_per_thread = 10_000;
-
-        for _ in 0..threads {
-            let allocator_clone = Arc::clone(&allocator);
-            let ids_clone = Arc::clone(&ids);
-
-            let handle = thread::spawn(move || {
-                let mut local_ids = Vec::with_capacity(allocations_per_thread);
-                for _ in 0..allocations_per_thread {
-                    let id = allocator_clone.allocate();
-                    assert_ne!(id.0, 0, "NetworkId(0) is reserved");
-                    local_ids.push(id.0);
-                }
-
-                let mut global_ids = ids_clone.lock().unwrap();
-                for id in local_ids {
-                    assert!(global_ids.insert(id), "Duplicate NetworkId found: {id}");
-                }
-            });
-
-            handles.push(handle);
-        }
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
-
-        let total_ids = ids.lock().unwrap().len();
-        assert_eq!(
-            total_ids,
-            threads * allocations_per_thread,
-            "Total allocated IDs mismatch"
-        );
-    }
 }

@@ -25,10 +25,10 @@ message OtpRequest {
 message OtpRequestAck {
     // Opaque server-chosen handle for this OTP attempt.
     string request_id = 1;
-    // Unix timestamp when the request expires.
-    uint64 expires_at = 2;
+    // Unix timestamp in milliseconds when the request expires.
+    uint64 expires_at_unix_ms = 2;
     // populated if the email is rate-limited.
-    uint32 retry_after_seconds = 3;
+    optional uint32 retry_after_seconds = 3;
 }
 
 // ── Unified Login ──────────────────────────────────────────────────
@@ -60,14 +60,16 @@ message GoogleLoginNonceRequest {}
 message GoogleLoginNonceResponse {
     string nonce_handle = 1;
     string nonce        = 2; // To be passed to Google OIDC by the client
-    uint64 expires_at   = 3;
+    // Unix timestamp in milliseconds when the nonce expires.
+    uint64 expires_at_unix_ms = 3;
 }
 
 // ── Shared response shape ──────────────────────────────────────────
 
 message LoginResponse {
     string session_token = 1;
-    uint64 expires_at    = 2;
+    // Unix timestamp in milliseconds when the session expires.
+    uint64 expires_at_unix_ms = 2;
     string player_id     = 3;
     bool   is_new_player = 4;
     LoginMethod login_method = 5;
@@ -87,7 +89,8 @@ message LogoutResponse { bool revoked = 1; }
 message RefreshRequest  { string session_token = 1; }
 message RefreshResponse {
     string session_token = 1;  // fresh PASETO; old token's jti added to deny-list
-    uint64 expires_at    = 2;
+    // Unix timestamp in milliseconds when the session expires.
+    uint64 expires_at_unix_ms = 2;
 }
 
 message ConnectTokenRequest {

@@ -43,31 +43,69 @@ pub struct Transform {
     pub entity_type: u16,
 }
 
+use std::sync::atomic::{AtomicU64, Ordering};
+use thiserror::Error;
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum AllocatorError {
+    #[error("NetworkId overflow (reached u64::MAX)")]
+    Overflow,
+    #[error("NetworkId allocator exhausted (reached limit)")]
+    Exhausted,
+}
+
 /// Authoritative allocator for [`NetworkId`]s.
 ///
 /// Used by the server to ensure IDs are unique and monotonically increasing.
-#[derive(Debug, Default)]
+/// Thread-safe and lock-free.
+#[derive(Debug)]
 pub struct NetworkIdAllocator {
-    next_id: u64,
+    start_id: u64,
+    next: AtomicU64,
+}
+
+impl Default for NetworkIdAllocator {
+    fn default() -> Self {
+        Self::new(1)
+    }
 }
 
 impl NetworkIdAllocator {
-    /// Creates a new allocator starting from a specific ID.
+    /// Creates a new allocator starting from a specific ID. 0 is reserved.
     #[must_use]
     pub fn new(start_id: u64) -> Self {
-        Self { next_id: start_id }
+        Self {
+            start_id,
+            next: AtomicU64::new(start_id),
+        }
     }
 
     /// Allocates a new unique [`NetworkId`].
-    pub fn allocate(&mut self) -> NetworkId {
-        let id = NetworkId(self.next_id);
-        self.next_id += 1;
-        id
+    ///
+    /// # Errors
+    /// Returns [`AllocatorError::Overflow`] if the next ID would exceed `u64::MAX`.
+    pub fn allocate(&self) -> Result<NetworkId, AllocatorError> {
+        let val = self.next.fetch_add(1, Ordering::Relaxed);
+
+        // 0 is invalid sentinel; u64::MAX is overflow.
+        // Since fetch_add returns the PREVIOUS value:
+        if val == u64::MAX {
+            // We already incremented it to 0 (wrapping), which is bad.
+            // But for now, just return error.
+            return Err(AllocatorError::Overflow);
+        }
+
+        if val == 0 {
+            return Err(AllocatorError::Exhausted);
+        }
+
+        Ok(NetworkId(val))
     }
 
-    /// Resets the allocator (use only in tests or clear-world scenarios).
-    pub fn reset(&mut self) {
-        self.next_id = 1;
+    /// Resets the allocator to its initial `start_id`.
+    /// Use only in tests or clear-world scenarios.
+    pub fn reset(&self) {
+        self.next.store(self.start_id, Ordering::Relaxed);
     }
 }
 

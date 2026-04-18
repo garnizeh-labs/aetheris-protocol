@@ -1,7 +1,13 @@
+const PROTO_FILES: &[&str] = &[
+    "proto/auth.proto",
+    "proto/matchmaking.proto",
+    "proto/telemetry.proto",
+];
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed=proto/auth.proto");
-    println!("cargo:rerun-if-changed=proto/matchmaking.proto");
-    println!("cargo:rerun-if-changed=proto/telemetry.proto");
+    for proto in PROTO_FILES {
+        println!("cargo:rerun-if-changed={proto}");
+    }
 
     #[cfg(feature = "grpc")]
     {
@@ -16,24 +22,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             tonic_build::configure()
                 .build_client(false)
                 .build_server(false)
-                .compile_protos(
-                    &[
-                        "proto/auth.proto",
-                        "proto/matchmaking.proto",
-                        "proto/telemetry.proto",
-                    ],
-                    &["proto"],
-                )?;
+                .compile_protos(PROTO_FILES, &["proto"])?;
         } else {
             // For native targets, generate the full client + server stubs.
-            tonic_build::configure().compile_protos(
-                &[
-                    "proto/auth.proto",
-                    "proto/matchmaking.proto",
-                    "proto/telemetry.proto",
-                ],
-                &["proto"],
-            )?;
+            tonic_build::configure().compile_protos(PROTO_FILES, &["proto"])?;
         }
     }
     Ok(())

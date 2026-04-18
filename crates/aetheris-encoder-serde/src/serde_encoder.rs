@@ -65,9 +65,14 @@ impl SerdeEncoder {
                 rot: *rot,
             },
             NetworkEvent::ClearWorld { .. } => WireEvent::ClearWorld,
-            other => {
+            NetworkEvent::ClientConnected(_)
+            | NetworkEvent::ClientDisconnected(_)
+            | NetworkEvent::UnreliableMessage { .. }
+            | NetworkEvent::ReliableMessage { .. }
+            | NetworkEvent::SessionClosed(_)
+            | NetworkEvent::StreamReset(_) => {
                 return Err(EncodeError::Io(std::io::Error::other(format!(
-                    "Cannot encode local-only variant as wire event: {other:?}"
+                    "Cannot encode local-only variant as wire event: {event:?}"
                 ))));
             }
         };
@@ -142,13 +147,12 @@ impl Encoder for SerdeEncoder {
         let mut cursor = Cursor::new(buffer);
         let mut serializer = rmp_serde::Serializer::new(&mut cursor);
 
-        header.serialize(&mut serializer).map_err(|_| {
-            // If it fails to serialize, it's likely a buffer overflow or structural issue.
-            // Since PacketHeader is simple, it's likely overflow.
+        header.serialize(&mut serializer).map_err(|_e| {
             metrics::counter!("aetheris_encoder_errors_total", "type" => "header_serialize_fail")
                 .increment(1);
+            // If it fails to serialize, it's likely a buffer overflow.
             EncodeError::BufferOverflow {
-                needed: 32, // Approximate guess for header
+                needed: 32, // PacketHeader is small (~20 bytes)
                 available: cursor.get_ref().len(),
             }
         })?;
@@ -170,7 +174,6 @@ impl Encoder for SerdeEncoder {
         let slice = cursor.into_inner();
         slice[header_len..total_needed].copy_from_slice(&event.payload);
 
-        let total_needed = header_len + payload_len;
         #[allow(clippy::cast_precision_loss)]
         metrics::histogram!(
             "aetheris_encoder_payload_size_bytes",
@@ -341,7 +344,8 @@ mod tests {
 
             let mut buffer = vec![0u8; 2048 + payload.len()];
             if let Ok(written) = encoder.encode(&event, &mut buffer) {
-                let update = encoder.decode(&buffer[..written]).unwrap();
+                let update = encoder.decode(&buffer[..written])
+                    .expect("Round-trip decode failed during fuzzed test");
                 assert_eq!(update.network_id, event.network_id);
                 assert_eq!(update.component_kind, event.component_kind);
                 assert_eq!(update.tick, event.tick);

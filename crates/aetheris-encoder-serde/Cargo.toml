@@ -13,6 +13,4 @@ metrics.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-proptest = "1.11.0"
-
-
+proptest = "1.6.0"

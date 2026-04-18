@@ -1,7 +1,7 @@
 //! Core protocol definitions and communication contracts for the Aetheris Engine.
 //!
 //! **Phase:** All Phases - Stable Core
-//! **Constraint:** Zero dependencies (minimal library footprint).
+//! **Constraint:** Minimal dependency footprint.
 //! **Purpose:** Defines the Trait Facade (`GameTransport`, `WorldState`, Encoder) that isolates
 //! the engine logic from concrete implementations.
 

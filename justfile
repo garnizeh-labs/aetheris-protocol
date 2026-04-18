@@ -47,4 +47,4 @@ docs-strict:
 # Check for unused dependencies (requires nightly; runs on main in CI)
 [group('lint')]
 udeps:
-    cargo +nightly udeps --workspace --all-targets
+    cargo +nightly-2025-07-01 udeps --workspace --all-targets

@@ -11,9 +11,9 @@ repository = "https://github.com/garnizeh-labs/aetheris-protocol"
 
 [workspace.dependencies]
 # Internal Workspace Crates
-aetheris-protocol = { path = "crates/aetheris-protocol" }
-aetheris-encoder-serde = { path = "crates/aetheris-encoder-serde" }
-aetheris-encoder-bitpack = { path = "crates/aetheris-encoder-bitpack" }
+aetheris-protocol = { path = "crates/aetheris-protocol", version = "0.1.14" }
+aetheris-encoder-serde = { path = "crates/aetheris-encoder-serde", version = "0.1.14" }
+aetheris-encoder-bitpack = { path = "crates/aetheris-encoder-bitpack", version = "0.1.14" }
 
 # External Dependencies (from monorepo)
 thiserror = "2.0.18"
