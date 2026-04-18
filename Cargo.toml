@@ -7,8 +7,12 @@ version = "0.2.0"
 edition = "2024"
 rust-version = "1.95.0"
 authors = ["garnizeH Labs"]
+description = "High-performance binary contracts and communication traits for the Aetheris Engine"
+documentation = "https://docs.rs/aetheris-protocol"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/garnizeh-labs/aetheris-protocol"
+keywords = ["networking", "protocol", "distributed-systems", "event-driven", "rpc"]
+categories = ["network-programming", "development-tools::debugging", "development-tools::profiling"]
 
 [workspace.dependencies]
 # Internal Workspace Crates
