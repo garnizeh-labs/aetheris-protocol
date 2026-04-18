@@ -526,7 +526,7 @@ crates/
 
 ## Appendix A — Glossary
 
-[GLOSSARY.md](../GLOSSARY.md)
+[GLOSSARY.md](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
@@ -540,7 +540,7 @@ crates/
 - **MessagePack**: A schema-full binary format used in Aetheris Phase 1.
 - **Dirty Mask**: A bitmask indicating which fields in a component were mutated.
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 

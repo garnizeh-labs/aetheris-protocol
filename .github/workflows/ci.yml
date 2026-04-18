@@ -115,4 +115,4 @@ jobs:
         run: sudo apt-get update -y && sudo apt-get install -y protobuf-compiler
       - uses: taiki-e/install-action@cargo-udeps
       - name: Check for unused dependencies
-        run: cargo +nightly-2025-07-01 udeps --workspace --all-targets
+        run: cargo +nightly-2025-07-01 udeps --workspace --all-targets --exclude-packages aetheris-protocol

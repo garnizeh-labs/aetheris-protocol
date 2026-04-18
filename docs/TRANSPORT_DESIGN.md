@@ -544,7 +544,7 @@ const CLIENT_TICK_BUDGET_BYTES: usize = 50 * 1024;
 
 Events exceeding the budget queue for the next tick. Priority: Critical > Ordered > Volatile.
 
-In Phase 3, the per-client budget is further refined by the **Priority Channel** system. Each channel in the `ChannelRegistry` declares a `budget_pct` (percentage of the per-client budget). The `PriorityScheduler` allocates bytes to channels in priority order (P0 first), ensuring that high-priority data is never starved by lower-priority traffic — even when the total budget is sufficient. See [PRIORITY_CHANNELS_DESIGN.md §10](PRIORITY_CHANNELS_DESIGN.md#10-bandwidth-budgeting) for the per-channel allocation model.
+In Phase 3, the per-client budget is further refined by the **Priority Channel** system. Each channel in the `ChannelRegistry` declares a `budget_pct` (percentage of the per-client budget). The `PriorityScheduler` allocates bytes to channels in priority order (P0 first), ensuring that high-priority data is never starved by lower-priority traffic — even when the total budget is sufficient. See [PRIORITY_CHANNELS_DESIGN.md §10](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/PRIORITY_CHANNELS_DESIGN.md#10-bandwidth-budgeting) for the per-channel allocation model.
 
 ---
 
@@ -652,7 +652,7 @@ crates/
 - **Selective Reliability**: The ability to send some data unreliably (datagrams) and some reliably (streams).
 - **MTU (Maximum Transmission Unit)**: The maximum size of a single packet (~1200 bytes for UDP).
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
@@ -665,4 +665,4 @@ crates/
 | D3 | Renet for P1, Quinn for P3 | Renet reduces risk in MVP; Quinn offers low-level control for Phase 3. | Quinn proves too complex or Renet is sufficient. | 2026-04-15 |
 | D4 | 0-RTT disabled | Risks replay attacks on sensitive game sessions. | Security model is updated to allow 0-RTT safely. | 2026-04-15 |
 | D5 | Managed dev-certs | Simplifies onboarding by auto-generating self-signed TLS certs. | Prod security requires mandatory ACME even in dev. | 2026-04-15 |
-| D6 | Priority Channel integration for per-client budgeting | Channel-aware budgeting (`budget_pct` per channel) replaces simple Critical > Ordered > Volatile priority in P3. See [PRIORITY_CHANNELS_DESIGN.md](PRIORITY_CHANNELS_DESIGN.md). | If channel overhead makes simple 3-tier priority sufficient. | 2026-04-15 |
+| D6 | Priority Channel integration for per-client budgeting | Channel-aware budgeting (`budget_pct` per channel) replaces simple Critical > Ordered > Volatile priority in P3. See [PRIORITY_CHANNELS_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/PRIORITY_CHANNELS_DESIGN.md). | If channel overhead makes simple 3-tier priority sufficient. | 2026-04-15 |

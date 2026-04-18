@@ -274,7 +274,7 @@ Datagram max size:       1140 bytes (MTU-safe)
 
 When the server's outbound queue for a client grows beyond threshold:
 
-1. **Priority Channel shedding** — The `PriorityScheduler` in Stage 5 selectively drops or reduces frequency of lower-priority channels (cosmetic → environment → distant) based on per-client `SheddingLevel`. This is the first line of defense and handles most congestion transparently. See [PRIORITY_CHANNELS_DESIGN.md](PRIORITY_CHANNELS_DESIGN.md).
+1. **Priority Channel shedding** — The `PriorityScheduler` in Stage 5 selectively drops or reduces frequency of lower-priority channels (cosmetic → environment → distant) based on per-client `SheddingLevel`. This is the first line of defense and handles most congestion transparently. See [PRIORITY_CHANNELS_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/PRIORITY_CHANNELS_DESIGN.md).
 2. **Interest management** reduces the entity update frequency for distant entities.
 3. **Quality degradation** switches from field-level deltas to lower-frequency full snapshots.
 4. **Disconnect** if the queue exceeds 5 seconds of buffered data (client is irrecoverably behind).
@@ -440,7 +440,7 @@ QUIC supports 0-RTT resumption using cached TLS session keys. On the second conn
 - **0-RTT**: Zero Round Trip Time — sending application data with the first handshake packet on reconnection.
 - **Unreliable Datagram**: A packet that may be lost or arrive out of order (used for volatile game state).
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
@@ -454,4 +454,4 @@ QUIC supports 0-RTT resumption using cached TLS session keys. On the second conn
 | D4 | No WebSocket fallback in P1 | UDP-blocked networks are <2% of target audience. | User analytics shows >5% connection failures. | 2026-04-15 |
 | D5 | Dual-plane topology | Prevents metagame latency from contaminating the game loop. Enables independent scaling. | A unified QUIC-based RPC framework proves simpler. | 2026-04-15 |
 | D6 | CUBIC for P1, BBR target for P3 | CUBIC is the safe default. BBR requires measurement under real game traffic patterns. | BBR performs worse than CUBIC on lossy WiFi in stress tests. | 2026-04-15 |
-| D7 | Priority Channels as first backpressure mechanism | Channel-level shedding is more surgical than global quality degradation. See [PRIORITY_CHANNELS_DESIGN.md](PRIORITY_CHANNELS_DESIGN.md). | If shedding overhead exceeds the bandwidth savings. | 2026-04-15 |
+| D7 | Priority Channels as first backpressure mechanism | Channel-level shedding is more surgical than global quality degradation. See [PRIORITY_CHANNELS_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/PRIORITY_CHANNELS_DESIGN.md). | If shedding overhead exceeds the bandwidth savings. | 2026-04-15 |

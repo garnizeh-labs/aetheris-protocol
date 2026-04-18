@@ -187,7 +187,7 @@ Where:
 - **GameTransport**: The network abstraction layer for unreliable and reliable delivery.
 - **Merkle Hash Chain**: A cryptographic structure ensuring historical event integrity.
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 

@@ -621,7 +621,7 @@ crates/aetheris-server/
 - **Idempotency Key**: A unique string ensuring an operation is only executed once even if retried.
 - **Matchmaking Registry**: A centralized database table tracking all active game world instances.
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
