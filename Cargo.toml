@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.1.14"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.95.0"
 authors = ["garnizeH Labs"]
@@ -12,9 +12,9 @@ repository = "https://github.com/garnizeh-labs/aetheris-protocol"
 
 [workspace.dependencies]
 # Internal Workspace Crates
-aetheris-protocol = { path = "crates/aetheris-protocol", version = "0.1.14" }
-aetheris-encoder-serde = { path = "crates/aetheris-encoder-serde", version = "0.1.14" }
-aetheris-encoder-bitpack = { path = "crates/aetheris-encoder-bitpack", version = "0.1.14" }
+aetheris-protocol = { path = "crates/aetheris-protocol", version = "0.2.0" }
+aetheris-encoder-serde = { path = "crates/aetheris-encoder-serde", version = "0.2.0" }
+aetheris-encoder-bitpack = { path = "crates/aetheris-encoder-bitpack", version = "0.2.0" }
 
 # External Dependencies
 thiserror = "2.0.18"
