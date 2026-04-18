@@ -1,0 +1,33 @@
+# denylist configuration
+# Synchronized with .cargo/audit.toml; keep both ignore lists in sync.
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",        # Required by 'zerocopy' and other system crates
+    "Unicode-3.0",         # Required by 'unicode-ident'
+    "Zlib",                # Required by 'foldhash'
+]
+
+[advisories]
+# Report unmaintained crates across all dependency types (direct + transitive).
+unmaintained = "all"
+# Deny yanked crates — a yanked crate may have been pulled for a security reason.
+yanked = "deny"
+ignore = []
+
+[bans]
+# Warn on duplicates; promote to deny once P1 deps are stabilised.
+multiple-versions = "warn"
+skip = [
+    "wit-bindgen",
+    "hashbrown",
+]
+
+[sources]
+# Only allow crates from crates.io. Disallow git sources and local paths
+# in production (workspace path deps are exempt by default).
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

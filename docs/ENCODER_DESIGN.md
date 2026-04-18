@@ -1,4 +1,5 @@
----Version: 0.2.0-draft
+---
+Version: 0.2.0-draft
 Status: Phase 1 — MVP / Phase 3 — Specified
 Phase: P1 | P3
 Last Updated: 2026-04-15
@@ -148,7 +149,10 @@ impl Encoder for SerdeEncoder {
 
     fn decode(&self, buf: &[u8]) -> Result<ComponentUpdate, EncodeError> {
         if buf.len() < HEADER_SIZE {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: "Buffer too small for header".to_string(),
+            });
         }
         let network_id = NetworkId(u64::from_le_bytes(buf[0..8].try_into().unwrap()));
         let component_kind = ComponentKind(u16::from_le_bytes(buf[8..10].try_into().unwrap()));
@@ -525,7 +529,7 @@ crates/
 
 ## Appendix A — Glossary
 
-[GLOSSARY.md](../GLOSSARY.md)
+[GLOSSARY.md](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
@@ -539,7 +543,7 @@ crates/
 - **MessagePack**: A schema-full binary format used in Aetheris Phase 1.
 - **Dirty Mask**: A bitmask indicating which fields in a component were mutated.
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 

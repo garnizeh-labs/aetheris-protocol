@@ -1,4 +1,5 @@
----Version: 0.2.0-draft
+---
+Version: 0.2.0-draft
 Status: Phase 1 — MVP / Phase 2 — Specified
 Phase: P1 | P2
 Last Updated: 2026-04-15
@@ -102,7 +103,7 @@ graph TD
 
 The Control Plane and Data Plane are **intentionally decoupled at the session level**. A Data Plane server does not need to call the Control Plane during the 60 Hz game loop. The token validation is a one-time handshake at connection time.
 
-See [SECURITY_DESIGN.md §7](SECURITY_DESIGN.md#7-identity--authentication) for the canonical authentication flow and identity model.
+See [SECURITY_DESIGN.md §7](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/SECURITY_DESIGN.md#7-identity--authentication) for the canonical authentication flow and identity model.
 
 ---
 
@@ -620,7 +621,7 @@ crates/aetheris-server/
 - **Idempotency Key**: A unique string ensuring an operation is only executed once even if retried.
 - **Matchmaking Registry**: A centralized database table tracking all active game world instances.
 
-[Full Glossary Document](../GLOSSARY.md)
+[Full Glossary Document](https://github.com/garnize/aetheris/blob/main/docs/GLOSSARY.md)
 
 ---
 
