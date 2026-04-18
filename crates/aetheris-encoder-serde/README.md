@@ -19,6 +19,8 @@ Then initialize the encoder:
 
 ```rust
 use aetheris_encoder_serde::SerdeEncoder;
+
+let encoder = SerdeEncoder::new();
 // Use with aetheris-protocol traits
 ```
 

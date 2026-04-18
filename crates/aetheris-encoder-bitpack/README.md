@@ -9,7 +9,7 @@ A high-performance Phase 3 `Encoder`. Uses custom bit-packing for maximum data d
 **Features:**
 - **Zero-allocation**: Minimal impact on the simulation loop.
 - **Field-level bit-width packing**: Pack component deltas across 32-bit boundaries.
-- **Quantization**: Built-in support for quantized floating point values.
+- **Quantization**: Built-in support for quantized floating-point values.
 
 ## Usage
 
