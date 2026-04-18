@@ -11,6 +11,7 @@ description = "High-performance binary contracts and communication traits for th
 documentation = "https://docs.rs/aetheris-protocol"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/garnizeh-labs/aetheris-protocol"
+readme = "README.md"
 keywords = ["networking", "protocol", "distributed-systems", "event-driven", "rpc"]
 categories = ["network-programming", "development-tools::debugging", "development-tools::profiling"]
 
