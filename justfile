@@ -67,19 +67,3 @@ clean:
 [group('release')]
 semver:
     cargo semver-checks --workspace
-
-# Generate the changelog (preview only)
-[group('release')]
-changelog:
-    git cliff -o CHANGELOG.md
-
-# Prepare a new release (updates Cargo.toml, CHANGELOG.md, commits and tags)
-# Usage: just release 0.2.0
-[group('release')]
-release version: check-all
-    sed -i '0,/^version = ".*"/s//version = "{{version}}"/' Cargo.toml
-    git cliff --tag v{{version}} -o CHANGELOG.md
-    git add Cargo.toml CHANGELOG.md
-    git commit -m "chore(release): prepare for v{{version}}"
-    git tag -a v{{version}} -m "Release v{{version}}"
-    @echo "Release prepared. Run 'git push origin main --tags' to finalize."
