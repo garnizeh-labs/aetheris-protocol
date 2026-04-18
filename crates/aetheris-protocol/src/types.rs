@@ -85,13 +85,16 @@ impl NetworkIdAllocator {
     /// # Errors
     /// Returns [`AllocatorError::Overflow`] if the next ID would exceed `u64::MAX`.
     pub fn allocate(&self) -> Result<NetworkId, AllocatorError> {
-        let val = self.next.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |curr| {
-            if curr == u64::MAX {
-                None
-            } else {
-                Some(curr + 1)
-            }
-        }).map_err(|_| AllocatorError::Overflow)?;
+        let val = self
+            .next
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |curr| {
+                if curr == u64::MAX {
+                    None
+                } else {
+                    Some(curr + 1)
+                }
+            })
+            .map_err(|_| AllocatorError::Overflow)?;
 
         if val == 0 {
             return Err(AllocatorError::Exhausted);

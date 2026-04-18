@@ -68,14 +68,23 @@ impl MockTransport {
     }
 
     /// Explicitly connects a client to the mock transport.
+    ///
+    /// # Panics
+    /// Panics if the internal mutex is poisoned.
     pub fn connect(&self, client_id: ClientId) {
         self.connected_clients.lock().unwrap().insert(client_id);
     }
 
     /// Explicitly disconnects a client from the mock transport.
+    ///
+    /// # Panics
+    /// Panics if any of the internal mutexes are poisoned.
     pub fn disconnect(&self, client_id: ClientId) {
         self.connected_clients.lock().unwrap().remove(&client_id);
-        self.per_client_unreliable.lock().unwrap().remove(&client_id);
+        self.per_client_unreliable
+            .lock()
+            .unwrap()
+            .remove(&client_id);
         self.per_client_reliable.lock().unwrap().remove(&client_id);
     }
 }

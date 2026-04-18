@@ -88,7 +88,7 @@ impl SerdeEncoder {
         &self,
         data: &[u8],
     ) -> Result<aetheris_protocol::events::NetworkEvent, EncodeError> {
-        let wire_event: WireEvent = rmp_serde::from_slice(data).map_err(|e| {
+        let wire_event: WireEvent = rmp_serde::from_slice(data).map_err(|_e| {
             EncodeError::MalformedPayload {
                 offset: 0, // In Phase 1 we don't track exact rmp-serde offset easily
             }
