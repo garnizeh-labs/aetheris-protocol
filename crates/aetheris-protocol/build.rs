@@ -19,13 +19,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if is_wasm {
             // For wasm32 builds, generate only prost message types — no service stubs.
             // The WASM crate provides its own hand-written gRPC-web client.
-            tonic_build::configure()
+            tonic_prost_build::configure()
                 .build_client(false)
                 .build_server(false)
                 .compile_protos(PROTO_FILES, &["proto"])?;
         } else {
             // For native targets, generate the full client + server stubs.
-            tonic_build::configure().compile_protos(PROTO_FILES, &["proto"])?;
+            tonic_prost_build::configure().compile_protos(PROTO_FILES, &["proto"])?;
         }
     }
     Ok(())

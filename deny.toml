@@ -7,6 +7,7 @@ allow = [
     "Apache-2.0",
     "BSD-2-Clause",        # Required by 'zerocopy' and other system crates
     "Unicode-3.0",         # Required by 'unicode-ident'
+    "Zlib",                # Required by 'foldhash'
 ]
 
 [advisories]
@@ -21,6 +22,7 @@ ignore = []
 multiple-versions = "warn"
 skip = [
     "wit-bindgen",
+    "hashbrown",
 ]
 
 [sources]
