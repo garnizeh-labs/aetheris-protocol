@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package aetheris.matchmaking.v1;
+
+import "auth.proto";
+
+service MatchmakingService {
+    rpc JoinQueue(QueueRequest)       returns (stream QueueUpdate);
+    rpc CancelQueue(CancelQueueRequest) returns (CancelQueueResponse);
+    rpc ListServers(ListServersRequest) returns (ListServersResponse);
+
+    // ── Server Ingestion ──────────────────────────────────────────
+    rpc RegisterInstance(RegisterInstanceRequest) returns (RegisterInstanceResponse);
+    rpc Heartbeat(HeartbeatRequest)               returns (HeartbeatResponse);
+}
+
+message QueueRequest {
+    string session_token = 1;  // PASETO v4.local (opaque)
+    string game_mode     = 2;
+    int32  region        = 3;  // latency hint; ignored in P1
+}
+
+message QueueUpdate {
+    oneof status {
+        QueuedStatus    queued    = 1;
+        MatchFoundStatus matched   = 2;
+        CancelledStatus  cancelled = 3;
+        ErrorStatus      error     = 4;
+    }
+}
+
+message QueuedStatus {
+    uint32 position = 1;
+    uint32 estimated_wait_seconds = 2;
+}
+
+message MatchFoundStatus {
+    aetheris.auth.v1.QuicConnectToken quic_token = 1;
+    string server_address = 2;     // "host:4433"
+    string world_instance_id = 3;  // For reconnect within 60s
+}
+
+message CancelledStatus {
+    string reason = 1;
+}
+
+message ErrorStatus {
+    string message = 1;
+    int32  code    = 2;
+}
+
+message CancelQueueRequest {
+    string session_token = 1;
+}
+
+message CancelQueueResponse {
+    bool success = 1;
+}
+
+message ListServersRequest  { string game_mode = 1; }
+
+message ListServersResponse { repeated ServerInstance instances = 1; }
+
+message ServerInstance {
+    string instance_id = 1;
+    string name        = 2;
+    string addr        = 3;
+    int32  players     = 4;
+    int32  max_players = 5;
+    string game_mode   = 6;
+    int32  reserved    = 7;
+}
+
+// ── Server Ingestion Messages ───────────────────────────────────
+
+message RegisterInstanceRequest {
+    ServerInstance instance = 1;
+}
+
+message RegisterInstanceResponse {
+    bool success = 1;
+}
+
+message HeartbeatRequest {
+    string instance_id = 1;
+    int32  players     = 2;
+}
+
+message HeartbeatResponse {
+    bool ok = 1;
+}

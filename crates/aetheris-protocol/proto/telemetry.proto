@@ -1,0 +1,50 @@
+syntax = "proto3";
+package aetheris.telemetry.v1;
+
+enum TelemetryLevel {
+    LEVEL_UNSPECIFIED = 0;
+    INFO = 1;
+    WARN = 2;
+    ERROR = 3;
+}
+
+// A single structured log event emitted by the WASM client.
+message TelemetryEvent {
+    // Unix epoch timestamp in milliseconds (from js_sys::Date::now()).
+    uint64 timestamp_ms = 1;
+    // Severity level.
+    TelemetryLevel level = 2;
+    // Structured target tag, e.g. "auth_flow" or "webtransport_handshake".
+    string target = 3;
+    // Human-readable message. Server truncates to 512 chars and strips control chars.
+    string message = 4;
+    // Optional round-trip time measurement in milliseconds.
+    optional double rtt_ms = 5;
+    // 128-bit ULID format for trace identification (26 Crockford Base32 chars).
+    // Generated once per GameWorker startup and shared by all events in that session.
+    // Allows chronologically sorted log correlation in Jaeger/Loki.
+    string trace_id = 6;
+    // Logical span name for lifecycle events, e.g. "wasm_init", "render_pipeline_setup".
+    // Empty string for plain metric/log events.
+    string span_name = 7;
+}
+
+// A batch of telemetry events sent in a single gRPC-web (or JSON) call.
+message TelemetryBatch {
+    repeated TelemetryEvent events = 1;
+    // Transient ULID generated on page load to group events from the same
+    // browser session. Used for chronological log correlation.
+    string session_id = 2;
+}
+
+// Empty response — the server acknowledges receipt via HTTP 200.
+message TelemetryResponse {}
+
+// Out-of-band diagnostic channel running over gRPC-web (TCP/HTTP).
+// Operates independently of WebTransport so it survives QUIC failures.
+// Unauthenticated; rate-limited in-process (see crates/aetheris-server/src/telemetry.rs)
+// as a DashMap-based per-IP limiter using request.remote_addr() enforcing 60 req/min.
+// CAVEAT: Behind proxies, the limiter sees the proxy's IP unless X-Forwarded-For is extracted.
+service TelemetryService {
+    rpc SubmitTelemetry(TelemetryBatch) returns (TelemetryResponse);
+}

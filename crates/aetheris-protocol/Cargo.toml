@@ -1,0 +1,28 @@
+[package]
+name = "aetheris-protocol"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+serde.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+tonic = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+serde_bytes = "0.11.19"
+
+[build-dependencies]
+tonic-build = { workspace = true, optional = true }
+
+[features]
+test-utils = []
+grpc = ["dep:tonic", "dep:prost", "dep:tonic-build"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tonic = { workspace = true, features = ["transport"] }
