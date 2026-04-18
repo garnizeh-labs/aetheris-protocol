@@ -33,10 +33,12 @@ pub enum EncodeError {
         available: usize,
     },
     /// The payload could not be parsed cleanly.
-    #[error("Malformed payload at byte offset {offset}")]
+    #[error("Malformed payload at byte offset {offset}: {message}")]
     MalformedPayload {
         /// The byte offset at which parsing failed.
         offset: usize,
+        /// The descriptive error message.
+        message: String,
     },
     /// Discovered a component kind that is not registered.
     #[error("Unknown component kind: {0:?}")]
@@ -87,8 +89,14 @@ mod tests {
             "Buffer overflow: need 256 bytes, have 128"
         );
 
-        let err5 = EncodeError::MalformedPayload { offset: 10 };
-        assert_eq!(err5.to_string(), "Malformed payload at byte offset 10");
+        let err5 = EncodeError::MalformedPayload {
+            offset: 10,
+            message: "unexpected EOF".to_string(),
+        };
+        assert_eq!(
+            err5.to_string(),
+            "Malformed payload at byte offset 10: unexpected EOF"
+        );
 
         let err6 = EncodeError::UnknownComponent(ComponentKind(99));
         assert_eq!(

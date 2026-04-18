@@ -88,9 +88,10 @@ impl SerdeEncoder {
         &self,
         data: &[u8],
     ) -> Result<aetheris_protocol::events::NetworkEvent, EncodeError> {
-        let wire_event: WireEvent = rmp_serde::from_slice(data).map_err(|_e| {
+        let wire_event: WireEvent = rmp_serde::from_slice(data).map_err(|e| {
             EncodeError::MalformedPayload {
                 offset: 0, // In Phase 1 we don't track exact rmp-serde offset easily
+                message: e.to_string(),
             }
         })?;
 
@@ -207,18 +208,22 @@ impl Encoder for SerdeEncoder {
         let mut cursor = Cursor::new(buffer);
         let mut deserializer = rmp_serde::Deserializer::new(&mut cursor);
 
-        let header = PacketHeader::deserialize(&mut deserializer).map_err(|_| {
+        let header = PacketHeader::deserialize(&mut deserializer).map_err(|e| {
             metrics::counter!("aetheris_encoder_errors_total", "type" => "malformed_payload")
                 .increment(1);
             EncodeError::MalformedPayload {
                 offset: usize::try_from(cursor.position()).unwrap_or(usize::MAX),
+                message: e.to_string(),
             }
         })?;
 
         let header_len = usize::try_from(cursor.position()).unwrap_or(usize::MAX);
         let payload = buffer
             .get(header_len..)
-            .ok_or(EncodeError::MalformedPayload { offset: header_len })?
+            .ok_or(EncodeError::MalformedPayload {
+                offset: header_len,
+                message: "Payload slice out of bounds".to_string(),
+            })?
             .to_vec();
 
         #[allow(clippy::cast_precision_loss)]
@@ -325,7 +330,11 @@ mod tests {
         let encoder = SerdeEncoder::new();
         let garbage = [0xff, 0xff, 0xff, 0xff];
         let result = encoder.decode(&garbage);
-        assert!(matches!(result, Err(EncodeError::MalformedPayload { .. })));
+        if let Err(EncodeError::MalformedPayload { message, .. }) = result {
+            assert!(!message.is_empty());
+        } else {
+            panic!("Expected MalformedPayload error, got {result:?}");
+        }
     }
 
     proptest! {

@@ -149,7 +149,10 @@ impl Encoder for SerdeEncoder {
 
     fn decode(&self, buf: &[u8]) -> Result<ComponentUpdate, EncodeError> {
         if buf.len() < HEADER_SIZE {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: "Buffer too small for header".to_string(),
+            });
         }
         let network_id = NetworkId(u64::from_le_bytes(buf[0..8].try_into().unwrap()));
         let component_kind = ComponentKind(u16::from_le_bytes(buf[8..10].try_into().unwrap()));

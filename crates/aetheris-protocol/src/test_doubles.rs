@@ -298,13 +298,22 @@ impl Encoder for MockEncoder {
 
     fn decode(&self, buffer: &[u8]) -> Result<ComponentUpdate, EncodeError> {
         if buffer.len() < 19 {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: "Buffer too small for mock header".to_string(),
+            });
         }
         if buffer[0] == Self::MOCK_ERROR_BYTE {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: "Triggered artificial MOCK_ERROR_BYTE".to_string(),
+            });
         }
         if buffer[0] != Self::MOCK_SENTINEL {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: format!("Invalid sentinel: expected {:#x}, got {:#x}", Self::MOCK_SENTINEL, buffer[0]),
+            });
         }
 
         let network_id = u64::from_le_bytes(buffer[1..9].try_into().unwrap());
@@ -329,7 +338,10 @@ impl Encoder for MockEncoder {
 
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError> {
         if data.is_empty() {
-            return Err(EncodeError::MalformedPayload { offset: 0 });
+            return Err(EncodeError::MalformedPayload {
+                offset: 0,
+                message: "Empty event data".to_string(),
+            });
         }
         // For testing purposes, if the first byte is 'A', we treat it as an Auth event
         if data[0] == b'A' {
@@ -337,7 +349,10 @@ impl Encoder for MockEncoder {
                 session_token: "mock_token".to_string(),
             });
         }
-        Err(EncodeError::MalformedPayload { offset: 0 })
+        Err(EncodeError::MalformedPayload {
+            offset: 0,
+            message: format!("Unexpected first byte for mock event: {:#x}", data[0]),
+        })
     }
     fn max_encoded_size(&self) -> usize {
         crate::MAX_SAFE_PAYLOAD_SIZE
