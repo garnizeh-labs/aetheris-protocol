@@ -2,9 +2,9 @@
 [group('check')]
 check: fmt clippy test security docs-check
 
-# Run ALL CI-equivalent checks (fast + docs-strict, udeps)
+# Run ALL CI-equivalent checks (fast + docs-strict, udeps, semver)
 [group('check')]
-check-all: check docs-strict udeps
+check-all: check docs-strict udeps semver
 
 # Check formatting
 [group('lint')]
@@ -15,6 +15,12 @@ fmt:
 [group('lint')]
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
+
+# Automatically apply formatting and clippy fixes
+[group('lint')]
+fix:
+    cargo fmt --all
+    cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged
 
 # Run all unit and integration tests
 [group('test')]
@@ -44,7 +50,36 @@ docs-check:
 docs-strict:
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
 
+# Pinned nightly for udeps / wasm (matches Aetheris workspace)
+wasm_nightly := "nightly-2025-07-01"
+
 # Check for unused dependencies (requires nightly; runs on main in CI)
 [group('lint')]
 udeps:
-    cargo +nightly-2025-07-01 udeps --workspace --all-targets
+    cargo +{{wasm_nightly}} udeps --workspace --all-targets
+
+# Remove all build artefacts reproducible via just build
+[group('maintenance')]
+clean:
+    cargo clean
+
+# Check semver compatibility for library crates before a release
+[group('release')]
+semver:
+    cargo semver-checks --workspace
+
+# Generate the changelog (preview only)
+[group('release')]
+changelog:
+    git cliff -o CHANGELOG.md
+
+# Prepare a new release (updates Cargo.toml, CHANGELOG.md, commits and tags)
+# Usage: just release 0.2.0
+[group('release')]
+release version: check-all
+    sed -i 's/^version = ".*"/version = "{{version}}"/' Cargo.toml
+    git cliff --tag v{{version}} -o CHANGELOG.md
+    git add Cargo.toml CHANGELOG.md
+    git commit -m "chore(release): prepare for v{{version}}"
+    git tag -a v{{version}} -m "Release v{{version}}"
+    @echo "Release prepared. Run 'git push origin main --tags' to finalize."

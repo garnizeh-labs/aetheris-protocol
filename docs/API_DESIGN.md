@@ -246,7 +246,7 @@ The encoder maintains a decode table mapping `ComponentKind → decode_fn`. An u
 
 ### 6.3 Versioning
 
-New `ComponentKind` values can be added without breaking existing clients (additive change). Removing a `ComponentKind` follows a 3-release deprecation window (see [MIGRATION_DESIGN.md](MIGRATION_DESIGN.md)).
+New `ComponentKind` values can be added without breaking existing clients (additive change). Removing a `ComponentKind` follows a 3-release deprecation window (see [MIGRATION_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/MIGRATION_DESIGN.md)).
 
 ---
 
@@ -379,7 +379,7 @@ export function send_input(input: Uint8Array): void;
 
 ## 10. Error API
 
-Each trait returns its own error type (see [ERROR_HANDLING_DESIGN.md](ERROR_HANDLING_DESIGN.md)):
+Each trait returns its own error type (see [ERROR_HANDLING_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/ERROR_HANDLING_DESIGN.md)):
 
 | Trait | Error Type | Variants |
 |---|---|---|
@@ -403,7 +403,7 @@ All error types derive `thiserror::Error` for automatic `Display` and `From` imp
 
 ### 11.2 Data Plane Rate Limiting
 
-Client input packets are rate-limited by the tick loop itself — the server processes at most one input per client per tick. Excess packets are dropped. Clients sending > 120 packets/second are flagged for behavioral analysis (see [SECURITY_DESIGN.md](SECURITY_DESIGN.md)).
+Client input packets are rate-limited by the tick loop itself — the server processes at most one input per client per tick. Excess packets are dropped. Clients sending > 120 packets/second are flagged for behavioral analysis (see [SECURITY_DESIGN.md](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/SECURITY_DESIGN.md)).
 
 ---
 

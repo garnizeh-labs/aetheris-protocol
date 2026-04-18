@@ -103,7 +103,7 @@ graph TD
 
 The Control Plane and Data Plane are **intentionally decoupled at the session level**. A Data Plane server does not need to call the Control Plane during the 60 Hz game loop. The token validation is a one-time handshake at connection time.
 
-See [SECURITY_DESIGN.md §7](SECURITY_DESIGN.md#7-identity--authentication) for the canonical authentication flow and identity model.
+See [SECURITY_DESIGN.md §7](https://github.com/garnizeh-labs/aetheris-engine/blob/main/docs/SECURITY_DESIGN.md#7-identity--authentication) for the canonical authentication flow and identity model.
 
 ---
 

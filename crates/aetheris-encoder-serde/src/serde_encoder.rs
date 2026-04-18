@@ -88,8 +88,11 @@ impl SerdeEncoder {
         &self,
         data: &[u8],
     ) -> Result<aetheris_protocol::events::NetworkEvent, EncodeError> {
-        let wire_event: WireEvent = rmp_serde::from_slice(data)
-            .map_err(|e| EncodeError::Io(std::io::Error::other(e.to_string())))?;
+        let wire_event: WireEvent = rmp_serde::from_slice(data).map_err(|e| {
+            EncodeError::MalformedPayload {
+                offset: 0, // In Phase 1 we don't track exact rmp-serde offset easily
+            }
+        })?;
 
         Ok(match wire_event {
             WireEvent::Ping { tick } => NetworkEvent::Ping {
@@ -160,6 +163,13 @@ impl Encoder for SerdeEncoder {
         let header_len = usize::try_from(cursor.position()).unwrap_or(usize::MAX);
         let payload_len = event.payload.len();
         let total_needed = header_len + payload_len;
+
+        if total_needed > self.max_encoded_size() {
+            return Err(EncodeError::BufferOverflow {
+                needed: total_needed,
+                available: self.max_encoded_size(),
+            });
+        }
 
         if total_needed > cursor.get_ref().len() {
             metrics::counter!("aetheris_encoder_errors_total", "type" => "buffer_overflow")

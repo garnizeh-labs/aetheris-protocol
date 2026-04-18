@@ -2,7 +2,7 @@
 //!
 //! Provides isolated, deterministic implementations of phase 1 traits for testing.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
 
 use async_trait::async_trait;
@@ -16,6 +16,8 @@ use crate::types::{ClientId, ComponentKind, LocalId, NetworkId};
 /// and drains injected inbound events.
 #[derive(Debug, Default)]
 pub struct MockTransport {
+    /// Registry of connected client IDs.
+    pub connected_clients: Mutex<HashSet<ClientId>>,
     /// Outbound unreliable packets accumulated per client.
     pub per_client_unreliable: Mutex<HashMap<ClientId, Vec<Vec<u8>>>>,
     /// Outbound reliable packets accumulated per client.
@@ -64,6 +66,18 @@ impl MockTransport {
             .remove(&cid)
             .unwrap_or_default()
     }
+
+    /// Explicitly connects a client to the mock transport.
+    pub fn connect(&self, client_id: ClientId) {
+        self.connected_clients.lock().unwrap().insert(client_id);
+    }
+
+    /// Explicitly disconnects a client from the mock transport.
+    pub fn disconnect(&self, client_id: ClientId) {
+        self.connected_clients.lock().unwrap().remove(&client_id);
+        self.per_client_unreliable.lock().unwrap().remove(&client_id);
+        self.per_client_reliable.lock().unwrap().remove(&client_id);
+    }
 }
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
@@ -74,6 +88,9 @@ impl GameTransport for MockTransport {
         client_id: ClientId,
         data: &[u8],
     ) -> Result<(), TransportError> {
+        if !self.connected_clients.lock().unwrap().contains(&client_id) {
+            return Err(TransportError::ClientNotConnected(client_id));
+        }
         if data.len() > crate::MAX_SAFE_PAYLOAD_SIZE {
             return Err(TransportError::PayloadTooLarge {
                 size: data.len(),
@@ -112,12 +129,11 @@ impl GameTransport for MockTransport {
                 max: crate::MAX_SAFE_PAYLOAD_SIZE,
             });
         }
+        let clients = self.connected_clients.lock().unwrap();
         let mut map = self.per_client_unreliable.lock().unwrap();
-        // The mock should know about connected clients even if they haven't sent anything yet.
-        // If the map is empty, nobody receives the broadcast.
-        // We assume clients are added to the map upon connection.
-        for queue in map.values_mut() {
-            queue.push(data.to_vec());
+        // Broadcast to all currently connected clients.
+        for &client_id in clients.iter() {
+            map.entry(client_id).or_default().push(data.to_vec());
         }
         Ok(())
     }
@@ -128,7 +144,7 @@ impl GameTransport for MockTransport {
     }
 
     async fn connected_client_count(&self) -> usize {
-        self.per_client_unreliable.lock().unwrap().len()
+        self.connected_clients.lock().unwrap().len()
     }
 }
 
@@ -290,8 +306,13 @@ impl Encoder for MockEncoder {
             tick,
         })
     }
-    fn encode_event(&self, _event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
-        Ok(vec![])
+    fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
+        match event {
+            NetworkEvent::Auth { .. } => Ok(vec![b'A']),
+            _ => Err(EncodeError::Io(std::io::Error::other(format!(
+                "MockEncoder: encoding not implemented for {event:?}"
+            )))),
+        }
     }
 
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError> {

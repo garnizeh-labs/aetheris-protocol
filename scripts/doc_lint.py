@@ -12,7 +12,7 @@ def lint_file(filepath):
         content = f.read()
 
     # Check for frontmatter
-    frontmatter_match = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+    frontmatter_match = re.search(r'^---\r?\n(.*?)\r?\n^---\s*$', content, re.DOTALL | re.MULTILINE)
     if not frontmatter_match:
         errors.append("Missing frontmatter (YAML block starting and ending with ---)")
     else:

@@ -23,7 +23,7 @@ pub use crate::types::{ClientId, LocalId, NetworkId, NetworkIdAllocator};
 ///   events (damage, death, loot) where loss would desync the client.
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-pub trait GameTransport: Send + Sync {
+pub trait GameTransport: Sync + GameTransportBounds {
     /// Sends an unreliable datagram to a specific client.
     ///
     /// Returns immediately. The transport layer may silently drop this packet
@@ -63,6 +63,17 @@ pub trait GameTransport: Send + Sync {
     /// Returns the number of currently connected clients.
     async fn connected_client_count(&self) -> usize;
 }
+
+/// Helper trait to provide conditional `Send` bounds for [`GameTransport`].
+#[cfg(target_arch = "wasm32")]
+pub trait GameTransportBounds {}
+#[cfg(target_arch = "wasm32")]
+impl<T: ?Sized> GameTransportBounds for T {}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub trait GameTransportBounds: Send {}
+#[cfg(not(target_arch = "wasm32"))]
+impl<T: ?Sized + Send> GameTransportBounds for T {}
 
 /// The ECS Facade. Translates between the engine's protocol-level types
 /// and the concrete ECS's internal representation.
