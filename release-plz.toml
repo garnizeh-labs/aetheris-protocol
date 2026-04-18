@@ -1,0 +1,6 @@
+[workspace]
+# Ensure we have enough time for multiple crates
+publish_timeout = "30m"
+# Use the existing cliff.toml for changelog generation
+changelog_config = "cliff.toml"
+# The default changelog path is CHANGELOG.md
