@@ -312,7 +312,11 @@ impl Encoder for MockEncoder {
         if buffer[0] != Self::MOCK_SENTINEL {
             return Err(EncodeError::MalformedPayload {
                 offset: 0,
-                message: format!("Invalid sentinel: expected {:#x}, got {:#x}", Self::MOCK_SENTINEL, buffer[0]),
+                message: format!(
+                    "Invalid sentinel: expected {:#x}, got {:#x}",
+                    Self::MOCK_SENTINEL,
+                    buffer[0]
+                ),
             });
         }
 
