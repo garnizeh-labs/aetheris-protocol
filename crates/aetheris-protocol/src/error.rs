@@ -19,6 +19,9 @@ pub enum TransportError {
     /// An underlying I/O error occurred.
     #[error("Transport I/O error: {0}")]
     Io(#[from] std::io::Error),
+    /// A mutex was poisoned.
+    #[error("Lock poisoned")]
+    LockPoisoned,
 }
 
 /// Errors from the serialization layer.

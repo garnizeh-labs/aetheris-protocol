@@ -97,7 +97,12 @@ impl GameTransport for MockTransport {
         client_id: ClientId,
         data: &[u8],
     ) -> Result<(), TransportError> {
-        if !self.connected_clients.lock().unwrap().contains(&client_id) {
+        if !self
+            .connected_clients
+            .lock()
+            .map_err(|_| TransportError::LockPoisoned)?
+            .contains(&client_id)
+        {
             return Err(TransportError::ClientNotConnected(client_id));
         }
         if data.len() > crate::MAX_SAFE_PAYLOAD_SIZE {
@@ -108,7 +113,7 @@ impl GameTransport for MockTransport {
         }
         self.per_client_unreliable
             .lock()
-            .unwrap()
+            .map_err(|_| TransportError::LockPoisoned)?
             .entry(client_id)
             .or_default()
             .push(data.to_vec());
@@ -116,7 +121,12 @@ impl GameTransport for MockTransport {
     }
 
     async fn send_reliable(&self, client_id: ClientId, data: &[u8]) -> Result<(), TransportError> {
-        if !self.connected_clients.lock().unwrap().contains(&client_id) {
+        if !self
+            .connected_clients
+            .lock()
+            .map_err(|_| TransportError::LockPoisoned)?
+            .contains(&client_id)
+        {
             return Err(TransportError::ClientNotConnected(client_id));
         }
         if data.len() > 65535 {
@@ -127,7 +137,7 @@ impl GameTransport for MockTransport {
         }
         self.per_client_reliable
             .lock()
-            .unwrap()
+            .map_err(|_| TransportError::LockPoisoned)?
             .entry(client_id)
             .or_default()
             .push(data.to_vec());
@@ -141,8 +151,14 @@ impl GameTransport for MockTransport {
                 max: crate::MAX_SAFE_PAYLOAD_SIZE,
             });
         }
-        let clients = self.connected_clients.lock().unwrap();
-        let mut map = self.per_client_unreliable.lock().unwrap();
+        let clients = self
+            .connected_clients
+            .lock()
+            .map_err(|_| TransportError::LockPoisoned)?;
+        let mut map = self
+            .per_client_unreliable
+            .lock()
+            .map_err(|_| TransportError::LockPoisoned)?;
         // Broadcast to all currently connected clients.
         for &client_id in clients.iter() {
             map.entry(client_id).or_default().push(data.to_vec());
@@ -151,7 +167,10 @@ impl GameTransport for MockTransport {
     }
 
     async fn poll_events(&mut self) -> Result<Vec<NetworkEvent>, TransportError> {
-        let mut queue = self.inbound_queue.lock().unwrap();
+        let mut queue = self
+            .inbound_queue
+            .lock()
+            .map_err(|_| TransportError::LockPoisoned)?;
         Ok(queue.drain(..).collect())
     }
 
