@@ -127,7 +127,30 @@ pub enum NetworkEvent {
         client_id: ClientId,
     },
     /// A local event indicating the client transport has been disconnected.
-    Disconnected,
+    Disconnected(ClientId),
+}
+
+impl NetworkEvent {
+    /// Returns true if this event is capable of being sent over the wire.
+    #[must_use]
+    pub const fn is_wire(&self) -> bool {
+        match self {
+            Self::Ping { .. }
+            | Self::Pong { .. }
+            | Self::Auth { .. }
+            | Self::Fragment { .. }
+            | Self::StressTest { .. }
+            | Self::Spawn { .. }
+            | Self::ClearWorld { .. } => true,
+            Self::ClientConnected(_)
+            | Self::ClientDisconnected(_)
+            | Self::UnreliableMessage { .. }
+            | Self::ReliableMessage { .. }
+            | Self::SessionClosed(_)
+            | Self::StreamReset(_)
+            | Self::Disconnected(_) => false,
+        }
+    }
 }
 
 /// A restricted view of `NetworkEvent` for over-the-wire transport.

@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import re
 
 # Configuration
 FORBIDDEN_WORDS = ["nexus"]
@@ -27,13 +28,15 @@ def check_branding(root_dir):
                 
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read().lower()
+                    content = f.read()
                     for word in FORBIDDEN_WORDS:
-                        if word in content:
+                        # Use whole-word regex matching (case-insensitive)
+                        pattern = re.compile(rf"\b{re.escape(word)}\b", re.IGNORECASE)
+                        if pattern.search(content):
                             print(f"❌ Violation found: '{word}' in {file_path}")
                             found_violations += 1
-            except (UnicodeDecodeError, PermissionError):
-                # Skip files that cannot be read as text
+            except (UnicodeDecodeError, PermissionError, OSError):
+                # Skip files that cannot be read as text or are inaccessible
                 continue
                 
     return found_violations

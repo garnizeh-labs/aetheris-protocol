@@ -27,7 +27,7 @@ loop from any specific ECS, transport, or serialization library.
 
 ## Repository Layout
 
-```
+```text
 crates/
   aetheris-protocol/          # Core contracts (traits, types, events, errors)
   aetheris-encoder-serde/     # Phase 1: MessagePack encoder (rmp-serde)
@@ -207,6 +207,7 @@ pub enum NetworkEvent {
     StressTest { client_id: ClientId, count: u16, rotate: bool },
     Spawn { client_id: ClientId, entity_type: u16, x: f32, y: f32, rot: f32 },
     ClearWorld { client_id: ClientId },
+    Disconnected(ClientId),
 }
 ```
 
@@ -279,11 +280,11 @@ Use `Reassembler` to buffer inbound fragments per client:
 ```rust
 let mut reassembler = Reassembler::new();
 // Inside poll_events handler:
-if let Some(full_payload) = reassembler.add_fragment(client_id, fragment) {
+if let Some(full_payload) = reassembler.ingest(client_id, fragment) {
     // full_payload is the reassembled message
 }
 // Cleanup stale buffers (call once per tick or per second)
-reassembler.prune_stale();
+reassembler.prune();
 ```
 
 ---
