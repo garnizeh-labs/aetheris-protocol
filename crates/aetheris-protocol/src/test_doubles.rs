@@ -150,9 +150,9 @@ impl GameTransport for MockTransport {
         Ok(())
     }
 
-    async fn poll_events(&mut self) -> Vec<NetworkEvent> {
+    async fn poll_events(&mut self) -> Result<Vec<NetworkEvent>, TransportError> {
         let mut queue = self.inbound_queue.lock().unwrap();
-        queue.drain(..).collect()
+        Ok(queue.drain(..).collect())
     }
 
     async fn connected_client_count(&self) -> usize {
@@ -392,7 +392,7 @@ mod tests {
         // Simulate 1000 ticks
         for tick in 1..=1000 {
             // Stage 1: Poll Network
-            let mut events = transport.poll_events().await;
+            let mut events = transport.poll_events().await.unwrap();
             if tick % 100 == 0 {
                 let cid = ClientId(tick);
                 transport.connect(cid);
