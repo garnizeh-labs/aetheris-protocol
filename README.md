@@ -12,12 +12,13 @@ This repository serves as the definitive architectural manifesto of the Aetheris
 >
 > 🚀 **Latest Milestone:** **Hardening & Standardization (M10146) complete!** Fixed atomic sequence wraparound, enforced MTU limits in all encoders, and gated traits for first-class WASM support.
 
-[![GitHub Release](https://img.shields.io/github/v/release/garnizeh-labs/aetheris-protocol?display_name=tag&logo=github)](https://github.com/garnizeh-labs/aetheris-protocol/releases)
-[![CI](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml)
+[![Build Status](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
+[![Crates.io](https://img.shields.io/crates/v/aetheris-protocol.svg)](https://crates.io/crates/aetheris-protocol)
+[![Docs.rs](https://docs.rs/aetheris-protocol/badge.svg)](https://docs.rs/aetheris-protocol)
 [![Rust Version](https://img.shields.io/badge/rust-1.95.0%2B-blue.svg?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+[![Convention Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/garnizeh-labs/aetheris-protocol/pulls)
 
 ## Workspace Components
