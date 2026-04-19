@@ -126,6 +126,8 @@ pub enum NetworkEvent {
         /// The client that requested the clear.
         client_id: ClientId,
     },
+    /// A local event indicating the client transport has been disconnected.
+    Disconnected,
 }
 
 /// A restricted view of `NetworkEvent` for over-the-wire transport.

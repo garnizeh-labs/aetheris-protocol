@@ -70,7 +70,8 @@ impl SerdeEncoder {
             | NetworkEvent::UnreliableMessage { .. }
             | NetworkEvent::ReliableMessage { .. }
             | NetworkEvent::SessionClosed(_)
-            | NetworkEvent::StreamReset(_) => {
+            | NetworkEvent::StreamReset(_)
+            | NetworkEvent::Disconnected => {
                 return Err(EncodeError::Io(std::io::Error::other(format!(
                     "Cannot encode local-only variant as wire event: {event:?}"
                 ))));
