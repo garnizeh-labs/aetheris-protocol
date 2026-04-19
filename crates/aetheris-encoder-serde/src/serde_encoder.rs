@@ -165,13 +165,6 @@ impl Encoder for SerdeEncoder {
         let payload_len = event.payload.len();
         let total_needed = header_len + payload_len;
 
-        if total_needed > self.max_encoded_size() {
-            return Err(EncodeError::BufferOverflow {
-                needed: total_needed,
-                available: self.max_encoded_size(),
-            });
-        }
-
         if total_needed > cursor.get_ref().len() {
             metrics::counter!("aetheris_encoder_errors_total", "type" => "buffer_overflow")
                 .increment(1);
