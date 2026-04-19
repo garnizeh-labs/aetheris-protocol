@@ -86,11 +86,11 @@ impl Reassembler {
         self
     }
 
-    /// Adds a fragment to the reassembler.
+    /// Ingests a fragment into the reassembler.
     ///
     /// Returns the full reassembled message if this was the last fragment,
     /// otherwise returns `None`.
-    pub fn add(&mut self, client_id: ClientId, event: FragmentedEvent) -> Option<Vec<u8>> {
+    pub fn ingest(&mut self, client_id: ClientId, event: FragmentedEvent) -> Option<Vec<u8>> {
         // Security check: ensure total_fragments is valid from untrusted input
         if event.total_fragments == 0 || event.total_fragments > crate::MAX_TOTAL_FRAGMENTS {
             tracing::warn!(
@@ -131,9 +131,21 @@ impl Reassembler {
     }
 
     /// Discards messages that have haven't been completed within the timeout.
-    pub fn cleanup(&mut self) {
+    pub fn prune(&mut self) {
         self.buffers
             .retain(|_, buffer| !buffer.is_stale(self.timeout));
+    }
+
+    /// **DEPRECATED**: Use `ingest()` instead.
+    #[deprecated(since = "0.2.4", note = "Renamed to ingest() for consistency")]
+    pub fn add(&mut self, client_id: ClientId, event: FragmentedEvent) -> Option<Vec<u8>> {
+        self.ingest(client_id, event)
+    }
+
+    /// **DEPRECATED**: Use `prune()` instead.
+    #[deprecated(since = "0.2.4", note = "Renamed to prune() for consistency")]
+    pub fn cleanup(&mut self) {
+        self.prune();
     }
 }
 
@@ -160,8 +172,8 @@ mod tests {
             payload: vec![3, 4],
         };
 
-        assert!(reassembler.add(cid, f1).is_none());
-        let result = reassembler.add(cid, f2).unwrap();
+        assert!(reassembler.ingest(cid, f1).is_none());
+        let result = reassembler.ingest(cid, f2).unwrap();
         assert_eq!(result, vec![1, 2, 3, 4]);
     }
 
@@ -190,9 +202,9 @@ mod tests {
             payload: vec![3],
         };
 
-        assert!(reassembler.add(cid, f3).is_none());
-        assert!(reassembler.add(cid, f1).is_none());
-        let result = reassembler.add(cid, f2).unwrap();
+        assert!(reassembler.ingest(cid, f3).is_none());
+        assert!(reassembler.ingest(cid, f1).is_none());
+        let result = reassembler.ingest(cid, f2).unwrap();
         assert_eq!(result, vec![1, 2, 3]);
     }
 
@@ -202,7 +214,7 @@ mod tests {
         let cid = ClientId(1);
         let mid = 102;
 
-        reassembler.add(
+        reassembler.ingest(
             cid,
             FragmentedEvent {
                 message_id: mid,
@@ -213,7 +225,7 @@ mod tests {
         );
 
         std::thread::sleep(Duration::from_millis(20));
-        reassembler.cleanup();
+        reassembler.prune();
         assert!(reassembler.buffers.is_empty());
     }
 }
