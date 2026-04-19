@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.5] - 2026-04-19
+
+### 🚀 Features
+
+- *(protocol)* Add NetworkEvent::Disconnected variant
+
+### 🐛 Bug Fixes
+
+- *(protocol)* Address code review feedback for reassembler and events
+- *(protocol)* Fix badge label and harden release workflow atomicity
+
+### 📚 Documentation
+
+- Update README badges to include Crates.io and Docs.rs links
+
+### 🎨 Styling
+
+- *(protocol)* Fix cargo fmt violations in serde_encoder tests
 ## [0.2.4] - 2026-04-19
 ## [0.2.3] - 2026-04-19
 ## [0.2.2] - 2026-04-19
