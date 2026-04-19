@@ -135,6 +135,18 @@ impl Reassembler {
         self.buffers
             .retain(|_, buffer| !buffer.is_stale(self.timeout));
     }
+
+    /// **DEPRECATED**: Use `ingest()` instead.
+    #[deprecated(since = "0.2.4", note = "Renamed to ingest() for consistency")]
+    pub fn add(&mut self, client_id: ClientId, event: FragmentedEvent) -> Option<Vec<u8>> {
+        self.ingest(client_id, event)
+    }
+
+    /// **DEPRECATED**: Use `prune()` instead.
+    #[deprecated(since = "0.2.4", note = "Renamed to prune() for consistency")]
+    pub fn cleanup(&mut self) {
+        self.prune();
+    }
 }
 
 #[cfg(test)]

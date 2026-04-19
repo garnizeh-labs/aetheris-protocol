@@ -390,7 +390,7 @@ use aetheris_protocol::error::TransportError;
 
 pub struct MyTransport { /* ... */ }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl GameTransport for MyTransport {
     async fn send_unreliable(&self, client_id: ClientId, data: &[u8]) -> Result<(), TransportError> {
         if data.len() > aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE {
@@ -404,10 +404,24 @@ impl GameTransport for MyTransport {
     }
 
     async fn send_reliable(&self, client_id: ClientId, data: &[u8]) -> Result<(), TransportError> {
+        if data.len() > aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE {
+            return Err(TransportError::PayloadTooLarge {
+                size: data.len(),
+                max: aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE,
+            });
+        }
+        // send via underlying reliable stream
         todo!()
     }
 
     async fn broadcast_unreliable(&self, data: &[u8]) -> Result<(), TransportError> {
+        if data.len() > aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE {
+            return Err(TransportError::PayloadTooLarge {
+                size: data.len(),
+                max: aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE,
+            });
+        }
+        // broadcast via underlying socket
         todo!()
     }
 
