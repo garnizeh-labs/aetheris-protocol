@@ -58,7 +58,11 @@ pub trait GameTransport: Sync + GameTransportBounds {
     ///
     /// This is called exactly once per tick at the top of the game loop.
     /// Events include: client connections, disconnections, and inbound data.
-    async fn poll_events(&mut self) -> Vec<NetworkEvent>;
+    ///
+    /// # Errors
+    /// Returns `TransportError::Io` on underlying transport failure or internal
+    /// state corruption (e.g. mutex poisoning).
+    async fn poll_events(&mut self) -> Result<Vec<NetworkEvent>, TransportError>;
 
     /// Returns the number of currently connected clients.
     async fn connected_client_count(&self) -> usize;
