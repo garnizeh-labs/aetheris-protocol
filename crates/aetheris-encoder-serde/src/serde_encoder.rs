@@ -391,9 +391,11 @@ mod tests {
 
         // Ping is wire-capable (but we should have a way to distinguish wire pings if needed)
         // For now, our implementation handles Ping in the match arm correctly by excluding it
-        // from certain paths or variants. 
+        // from certain paths or variants.
         // Let's verify that a standard Auth event (which is wire) works.
-        let auth = NetworkEvent::Auth { session_token: "token".to_string() };
+        let auth = NetworkEvent::Auth {
+            session_token: "token".to_string(),
+        };
         assert!(encoder.encode_event(&auth).is_ok());
     }
 }
