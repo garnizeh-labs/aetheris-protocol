@@ -38,11 +38,12 @@ security:
 docs:
     cargo doc --workspace --no-deps
 
-# Check documentation quality (linting, frontmatter, spelling, links)
+# Check documentation quality (linting, frontmatter, spelling, links, branding)
 [group('doc')]
 docs-check:
     python3 scripts/doc_lint.py
     python3 scripts/check_links.py
+    python3 scripts/check_branding.py
     uvx codespell
 
 # Build documentation (mirrors the CI job — warnings are errors)
