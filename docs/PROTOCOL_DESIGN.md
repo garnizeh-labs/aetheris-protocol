@@ -1,8 +1,8 @@
 ---
-Version: 0.1.0-draft
+Version: 0.1.1
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
-Last Updated: 2026-04-15
+Last Updated: 2026-04-20
 Authors: Team (Antigravity)
 Spec References: [PF-1000]
 Tier: 1
@@ -136,6 +136,33 @@ pub struct ComponentUpdate {
     pub tick: u64,
 }
 ```
+
+### `ShipClass`
+Used for rendering and stat selection (Interceptor, Dreadnought, Hauler).
+
+### `WeaponId`
+A `u8` unique identifier for a static weapon type definition.
+
+### `SectorId`
+A `u64` globally unique identifier for a persistent sector or room instance.
+
+### `OreType`
+Defines material types that can be extracted from asteroids (e.g., `RawOre`).
+
+### `ProjectileType`
+Classification for projectile delivery and VFX (e.g., `PulseLaser`, `SeekerMissile`).
+
+### `AIState`
+NPC behavior machine state (Patrol, Aggro, Combat, Return).
+
+### `RespawnLocation`
+Specifies where an entity should appear after death (Nearest Safe Zone, Station, or Coordinates).
+
+### `InputCommand`
+Aggregated user input for a single tick, including movement axes and action bitmasks.
+
+### `ShipStats`
+Authoritative vitals for ship entities, including HP, Shields, Energy, and regeneration rates.
 
 ### `SuspicionScore` (Security)
 

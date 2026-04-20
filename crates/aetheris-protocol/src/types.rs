@@ -1,5 +1,5 @@
 //! Protocol-level primitive types.
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
 
 use serde::{Deserialize, Serialize};
 
@@ -109,8 +109,22 @@ pub struct InputCommand {
     pub actions: u32,
 }
 
+impl InputCommand {
+    /// Returns a new `InputCommand` with `move_x` and `move_y` clamped to the [-1.0, 1.0] range.
+    #[must_use]
+    pub fn clamped(mut self) -> Self {
+        self.move_x = self.move_x.clamp(-1.0, 1.0);
+        self.move_y = self.move_y.clamp(-1.0, 1.0);
+        self
+    }
+}
+
 /// Basic vitals for any ship entity.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+///
+/// NOTE: Zero values in maxima (`max_hp`, `max_shield`, `max_energy`) represent an uninitialized
+/// or dead state. Logic that performs divisions or percentage calculations must verify
+/// non-zero maxima.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ShipStats {
     pub hp: u16,
     pub max_hp: u16,
@@ -120,6 +134,22 @@ pub struct ShipStats {
     pub max_energy: u16,
     pub shield_regen_per_s: u16,
     pub energy_regen_per_s: u16,
+}
+
+impl Default for ShipStats {
+    /// Returns a baseline valid state (100 HP/Shield/Energy).
+    fn default() -> Self {
+        Self {
+            hp: 100,
+            max_hp: 100,
+            shield: 100,
+            max_shield: 100,
+            energy: 100,
+            max_energy: 100,
+            shield_regen_per_s: 0,
+            energy_regen_per_s: 0,
+        }
+    }
 }
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -208,5 +238,37 @@ mod tests {
 
         let kind = ComponentKind(1);
         assert_eq!(kind.0, 1);
+    }
+
+    #[test]
+    fn test_input_command_clamping() {
+        let cmd = InputCommand {
+            tick: 1,
+            move_x: 2.0,
+            move_y: -5.0,
+            actions: 0,
+        };
+        let clamped = cmd.clamped();
+        assert!((clamped.move_x - 1.0).abs() < f32::EPSILON);
+        assert!((clamped.move_y - -1.0).abs() < f32::EPSILON);
+
+        let valid = InputCommand {
+            tick: 1,
+            move_x: 0.5,
+            move_y: -0.2,
+            actions: 0,
+        };
+        let clamped = valid.clamped();
+        assert!((clamped.move_x - 0.5).abs() < f32::EPSILON);
+        assert!((clamped.move_y - -0.2).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_ship_stats_non_zero_default() {
+        let stats = ShipStats::default();
+        assert!(stats.max_hp > 0);
+        assert!(stats.max_shield > 0);
+        assert!(stats.max_energy > 0);
+        assert_eq!(stats.hp, stats.max_hp);
     }
 }
