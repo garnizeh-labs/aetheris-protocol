@@ -1,5 +1,5 @@
 ---
-Version: 0.1.2
+Version: 0.1.3
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
 Last Updated: 2026-04-20
@@ -161,6 +161,7 @@ Specifies where an entity should appear after death (Nearest Safe Zone, Station,
 ### `InputCommand`
 Aggregated user input for a single tick, including movement axes and action bitmasks. 
 - **Kind ID**: 128 (Transient/Inbound-Only).
+- **Discriminant**: `INPUT_COMMAND_KIND` (ComponentKind(128)).
 
 ## Component Kind Reservation Policy
 
