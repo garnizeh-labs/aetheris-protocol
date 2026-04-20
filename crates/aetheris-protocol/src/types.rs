@@ -41,6 +41,8 @@ pub struct Transform {
     pub z: f32,
     /// Rotation in radians
     pub rotation: f32,
+    /// The high-level entity type identifier for early client rendering.
+    pub entity_type: u16,
 }
 
 /// Ship classification for rendering and stat selection.
