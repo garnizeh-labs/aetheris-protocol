@@ -1,26 +1,31 @@
-# Aetheris Protocol
+<div align="center">
+  <h1>Aetheris Protocol</h1>
+  <p>Binary contracts, lifecycle management, and communication traits for the Aetheris Engine.</p>
 
-Binary contracts, lifecycle management, and communication traits for the Aetheris Engine.
+  [![CI](https://img.shields.io/github/actions/workflow/status/garnizeh-labs/aetheris-protocol/ci.yml?branch=main&style=flat-square&logo=github&label=CI)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
+  [![Rust Version](https://img.shields.io/badge/rust-1.95.0%2B-blue?style=flat-square&logo=rust)](https://www.rust-lang.org/)
+  [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square)](https://conventionalcommits.org)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/garnizeh-labs/aetheris-protocol/pulls)
+</div>
 
-## The Authority of the Wire — The Single Source of Truth
+---
 
-In a 60Hz authoritative simulation, the network protocol is not just a data format — it is the single source of truth. **Aetheris Protocol** provides the high-performance, media-agnostic contracts that allow the client and server to synchronize massive world states with sub-millisecond overhead. It handles the extraction of ECS deltas, high-frequency replication, and message reassembly across unreliable UDP channels.
+## ⚖️ The Authority of the Wire — The Single Source of Truth
 
-This repository serves as the definitive architectural manifesto of the Aetheris wire format. It decouples the engine's core logic from specific networking implementations, allowing the protocol to evolve from rapid-iteration development to high-density production bit-packing without touching the simulation core.
+In a 60Hz authoritative simulation, the network protocol is not just a data format — it is the single source of truth. **Aetheris Protocol** provides the high-performance, media-agnostic contracts that allow the client and server to synchronize massive world states with sub-millisecond overhead.
 
-> **[Read the Architecture Design Document](docs/PROTOCOL_DESIGN.md)** — traits, encoders, and wire format specifications.
->
+> [!TIP]
 > 🚀 **Latest Milestone:** **VS-01 (One Ship, One Sector) complete!** Canonicalized the 14 replicated component IDs and finalized the Authoritative Input Pipeline (M1028). Implemented `ComponentKind(128)` for transient inbound-only commands with anti-replay validation.
 
-[![Build Status](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
-[![aetheris-protocol](https://img.shields.io/crates/v/aetheris-protocol?label=aetheris-protocol)](https://crates.io/crates/aetheris-protocol) [![docs](https://img.shields.io/docsrs/aetheris-protocol?label=docs)](https://docs.rs/aetheris-protocol)
-[![aetheris-encoder-bitpack](https://img.shields.io/crates/v/aetheris-encoder-bitpack?label=aetheris-encoder-bitpack)](https://crates.io/crates/aetheris-encoder-bitpack) [![docs](https://img.shields.io/docsrs/aetheris-encoder-bitpack?label=docs)](https://docs.rs/aetheris-encoder-bitpack)
-[![aetheris-encoder-serde](https://img.shields.io/crates/v/aetheris-encoder-serde?label=aetheris-encoder-serde)](https://crates.io/crates/aetheris-encoder-serde) [![docs](https://img.shields.io/docsrs/aetheris-encoder-serde?label=docs)](https://docs.rs/aetheris-encoder-serde)
-[![Rust Version](https://img.shields.io/badge/rust-1.95.0%2B-blue.svg?logo=rust)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/garnizeh-labs/aetheris-protocol/pulls)
+### 📦 Workspace Components
+
+| Crate | Link | Documentation |
+| :--- | :--- | :--- |
+| **`aetheris-protocol`** | [![Crates.io](https://img.shields.io/crates/v/aetheris-protocol?style=flat-square)](https://crates.io/crates/aetheris-protocol) | [![Docs.rs](https://img.shields.io/docsrs/aetheris-protocol?style=flat-square&logo=docs.rs&label=docs)](https://docs.rs/aetheris-protocol) |
+| **`aetheris-encoder-bitpack`** | [![Crates.io](https://img.shields.io/crates/v/aetheris-encoder-bitpack?style=flat-square)](https://crates.io/crates/aetheris-encoder-bitpack) | [![Docs.rs](https://img.shields.io/docsrs/aetheris-encoder-bitpack?style=flat-square&logo=docs.rs&label=docs)](https://docs.rs/aetheris-encoder-bitpack) |
+| **`aetheris-encoder-serde`** | [![Crates.io](https://img.shields.io/crates/v/aetheris-encoder-serde?style=flat-square)](https://crates.io/crates/aetheris-encoder-serde) | [![Docs.rs](https://img.shields.io/docsrs/aetheris-encoder-serde?style=flat-square&logo=docs.rs&label=docs)](https://docs.rs/aetheris-encoder-serde) |
+
+---
 
 ## Workspace Components
 
