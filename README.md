@@ -13,8 +13,9 @@ This repository serves as the definitive architectural manifesto of the Aetheris
 > 🚀 **Latest Milestone:** **VS-01 (One Ship, One Sector) complete!** Canonicalized the 14 replicated component IDs and finalized the Authoritative Input Pipeline (M1028). Implemented `ComponentKind(128)` for transient inbound-only commands with anti-replay validation.
 
 [![Build Status](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
-[![Crates.io](https://img.shields.io/crates/v/aetheris-protocol.svg)](https://crates.io/crates/aetheris-protocol)
-[![Docs.rs](https://docs.rs/aetheris-protocol/badge.svg)](https://docs.rs/aetheris-protocol)
+[![aetheris-protocol](https://img.shields.io/crates/v/aetheris-protocol?label=aetheris-protocol)](https://crates.io/crates/aetheris-protocol) [![docs](https://img.shields.io/docsrs/aetheris-protocol?label=docs)](https://docs.rs/aetheris-protocol)
+[![aetheris-encoder-bitpack](https://img.shields.io/crates/v/aetheris-encoder-bitpack?label=aetheris-encoder-bitpack)](https://crates.io/crates/aetheris-encoder-bitpack) [![docs](https://img.shields.io/docsrs/aetheris-encoder-bitpack?label=docs)](https://docs.rs/aetheris-encoder-bitpack)
+[![aetheris-encoder-serde](https://img.shields.io/crates/v/aetheris-encoder-serde?label=aetheris-encoder-serde)](https://crates.io/crates/aetheris-encoder-serde) [![docs](https://img.shields.io/docsrs/aetheris-encoder-serde?label=docs)](https://docs.rs/aetheris-encoder-serde)
 [![Rust Version](https://img.shields.io/badge/rust-1.95.0%2B-blue.svg?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
