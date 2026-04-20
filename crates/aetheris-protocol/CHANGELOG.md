@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.6] - 2026-04-20
+
+### 🚀 Features
+
+- Synchronize ECS components and ship stats per M1020
+
+### ⚙️ Miscellaneous Tasks
+
+- *(protocol)* Bump version 2 and harden InputCommand/ShipStats
 ## [0.2.5] - 2026-04-19
 
 ### 🚀 Features
