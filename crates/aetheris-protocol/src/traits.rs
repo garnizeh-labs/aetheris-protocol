@@ -169,6 +169,12 @@ pub trait WorldState: Send {
 /// The `decode` method reads from a borrowed slice.
 /// No `Vec`, no `String`, no heap allocation during steady-state operation.
 pub trait Encoder: Send + Sync {
+    /// Returns the codec ID used by this encoder.
+    ///
+    /// P1: `SerdeEncoder` = 1 (rmp-serde).
+    /// P3: `BitpackEncoder` = 2.
+    fn codec_id(&self) -> u32;
+
     /// Serializes a replication event into the provided buffer.
     ///
     /// Returns the number of bytes written. If the buffer is too small,

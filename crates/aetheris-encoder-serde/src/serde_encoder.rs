@@ -133,6 +133,10 @@ impl SerdeEncoder {
 }
 
 impl Encoder for SerdeEncoder {
+    fn codec_id(&self) -> u32 {
+        1
+    }
+
     fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
         self.encode_event(event)
     }

@@ -298,6 +298,10 @@ impl MockEncoder {
 }
 
 impl Encoder for MockEncoder {
+    fn codec_id(&self) -> u32 {
+        0 // Mock default
+    }
+
     fn encode(&self, event: &ReplicationEvent, buffer: &mut [u8]) -> Result<usize, EncodeError> {
         // Simple encoding for mock round-trip: Sentinel(1) + NetworkId(8) + ComponentKind(2) + Tick(8) + Payload(n)
         let required = 1 + 8 + 2 + 8 + event.payload.len();

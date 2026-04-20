@@ -10,7 +10,7 @@ This repository serves as the definitive architectural manifesto of the Aetheris
 
 > **[Read the Architecture Design Document](docs/PROTOCOL_DESIGN.md)** — traits, encoders, and wire format specifications.
 >
-> 🚀 **Latest Milestone:** **Hardening & Standardization (M10146) complete!** Fixed atomic sequence wraparound, enforced MTU limits in all encoders, and gated traits for first-class WASM support.
+> 🚀 **Latest Milestone:** **Master ECS Sync (M1020) complete!** Canonicalized the 14 replicated component IDs, establishing the authoritative wire-format for Phase 1 ship classes and physics. Enforced protocol-level Z-axis constraints to guarantee 2D Newtonian flight across all clients.
 
 [![Build Status](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
 [![Crates.io](https://img.shields.io/crates/v/aetheris-protocol.svg)](https://crates.io/crates/aetheris-protocol)
