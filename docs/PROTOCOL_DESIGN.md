@@ -1,5 +1,5 @@
 ---
-Version: 0.1.1
+Version: 0.1.2
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
 Last Updated: 2026-04-20
@@ -168,8 +168,8 @@ To prevent ID collisions across official extensions and community plugins, the `
 
 | Range | Owner | Description |
 |---|---|---|
-| **0–1023** | **Engine Core** | Fundamental engine components (Transform, NetworkId, etc.). |
-| **128** | **Inbound Only** | Reserved for transient commands like `InputCommand`. |
+| **0–1023 (except 128)** | **Engine Core** | Fundamental engine components (Transform, NetworkId, etc.). |
+| **128** | **InputCommand** | Explicitly reserved for client-to-server transient commands. |
 | **1024–2047** | **Official Extensions** | Managed extensions like standard weapons, physics bodies. |
 | **2048–32767** | **Application Space** | Game-specific logic (e.g., Void Rush specific modules). |
 | **32768–65535** | **Reserved** | Reserved for non-replicated or inbound-only variants. |

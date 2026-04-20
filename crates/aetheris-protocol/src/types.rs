@@ -28,7 +28,7 @@ pub struct ClientId(pub u64);
 /// In Phase 3, this may become a compile-time type hash.
 ///
 /// ### Reservation Policy (M1020/M1015):
-/// - `0–1023`: Engine Core (Replicated).
+/// - `0–1023` (except 128): Engine Core (Replicated).
 /// - `1024–2047`: Official Engine Extensions.
 /// - `128`: Explicitly reserved for Input Commands (Transient/Inbound-Only).
 /// - `32768+`: Reserved for Non-Replicated/Inbound variants.
