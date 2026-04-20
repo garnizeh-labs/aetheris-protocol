@@ -10,7 +10,7 @@ This repository serves as the definitive architectural manifesto of the Aetheris
 
 > **[Read the Architecture Design Document](docs/PROTOCOL_DESIGN.md)** — traits, encoders, and wire format specifications.
 >
-> 🚀 **Latest Milestone:** **Master ECS Sync (M1020) complete!** Canonicalized the 14 replicated component IDs and hardened the `Transform` struct with `entity_type` for early client-side rendering. Enforced protocol-level Z-axis constraints to guarantee 2D Newtonian flight across all clients.
+> 🚀 **Latest Milestone:** **VS-01 (One Ship, One Sector) complete!** Canonicalized the 14 replicated component IDs and finalized the Authoritative Input Pipeline (M1028). Implemented `ComponentKind(128)` for transient inbound-only commands with anti-replay validation.
 
 [![Build Status](https://github.com/garnizeh-labs/aetheris-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/garnizeh-labs/aetheris-protocol/actions)
 [![Crates.io](https://img.shields.io/crates/v/aetheris-protocol.svg)](https://crates.io/crates/aetheris-protocol)

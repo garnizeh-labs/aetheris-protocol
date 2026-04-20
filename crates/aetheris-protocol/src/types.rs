@@ -26,8 +26,18 @@ pub struct ClientId(pub u64);
 ///
 /// In Phase 1, this is a simple enum discriminant.
 /// In Phase 3, this may become a compile-time type hash.
+///
+/// ### Reservation Policy (M1020/M1015):
+/// - `0–1023` (except 128): Engine Core (Replicated).
+/// - `1024–2047`: Official Engine Extensions.
+/// - `128`: Explicitly reserved for Input Commands (Transient/Inbound-Only).
+/// - `32768+`: Reserved for Non-Replicated/Inbound variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ComponentKind(pub u16);
+
+/// Discriminant for client-to-server input commands.
+/// Tagged as Transient/Inbound-Only.
+pub const INPUT_COMMAND_KIND: ComponentKind = ComponentKind(128);
 
 /// Standard transform component used for replication (`ComponentKind` 1).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
