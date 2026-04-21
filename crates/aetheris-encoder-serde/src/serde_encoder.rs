@@ -420,7 +420,7 @@ mod tests {
             );
             match decoded_event {
                 GameEvent::AsteroidDepleted { network_id } => {
-                    assert_eq!(network_id, NetworkId(123))
+                    assert_eq!(network_id, NetworkId(123));
                 }
             }
         } else {

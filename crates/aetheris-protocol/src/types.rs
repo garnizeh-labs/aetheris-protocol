@@ -128,8 +128,8 @@ pub enum PlayerInputKind {
     FirePrimary,
 }
 
-/// Maximum allowed actions in a single InputCommand to prevent payload DoS.
-/// Chosen to stay well within MAX_SAFE_PAYLOAD_SIZE (1200 bytes).
+/// Maximum allowed actions in a single `InputCommand` to prevent payload `DoS`.
+/// Chosen to stay well within `MAX_SAFE_PAYLOAD_SIZE` (1200 bytes).
 pub const MAX_ACTIONS: usize = 128;
 
 /// Aggregated user input for a single simulation tick.
