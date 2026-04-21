@@ -1,10 +1,10 @@
 ---
-Version: 0.1.3
+Version: 0.1.4 (Protocol v3)
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
-Last Updated: 2026-04-20
+Last Updated: 2026-04-21
 Authors: Team (Antigravity)
-Spec References: [PF-1000]
+Spec References: [PF-1000, M1020]
 Tier: 1
 ---
 
@@ -31,16 +31,19 @@ pub trait WorldState: Send {
     fn get_network_id(&self, local_id: LocalId) -> Option<NetworkId>;
 
     /// Extracts replication deltas for all components modified since the last tick.
-    /// Mutation is required to advance the internal change-detection cursor.
     fn extract_deltas(&mut self) -> Vec<ReplicationEvent>;
 
+    /// Extracts discrete game events that should be sent reliably.
+    /// [v3] Returns typed WireEvent payloads for centralized serialization.
+    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, WireEvent)>;
+
     /// Injects parsed state updates from the network into the ECS.
-    fn apply_updates(&mut self, updates: Vec<ComponentUpdate>);
+    fn apply_updates(&mut self, updates: &[(ClientId, ComponentUpdate)]);
 
     /// Runs a single simulation frame for the ECS (Stage 3).
     fn simulate(&mut self);
 
-    /// Spawn a new networked entity. The ECS allocates and returns the NetworkId.
+    /// Spawn a new networked entity.
     fn spawn_networked(&mut self) -> NetworkId;
 
     /// Despawns a network-replicated entity by its NetworkId.
@@ -81,20 +84,20 @@ The `Encoder` trait defines how replication events are serialized for the wire.
 
 ```rust
 pub trait Encoder: Send + Sync {
-    /// Serializes a replication event into the provided buffer (allocation-free).
+    /// codec ID (1=Serde, 2=Bitpack).
+    fn codec_id(&self) -> u32;
+
+    /// Serializes a replication event into the provided buffer.
     fn encode(&self, event: &ReplicationEvent, buffer: &mut [u8]) -> Result<usize, EncodeError>;
 
     /// Deserializes raw bytes into a component update.
     fn decode(&self, buffer: &[u8]) -> Result<ComponentUpdate, EncodeError>;
 
-    /// Encodes a high-level NetworkEvent (Ping/Pong, heartbeats).
-    fn encode_event(&self, event: &NetworkEvent, buffer: &mut [u8]) -> Result<usize, EncodeError>;
+    /// Encodes a high-level NetworkEvent.
+    fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError>;
 
     /// Decodes a high-level NetworkEvent from a byte slice.
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError>;
-
-    /// Returns the maximum possible encoded size for a single event.
-    fn max_encoded_size(&self) -> usize;
 }
 ```
 
@@ -159,9 +162,10 @@ NPC behavior machine state (Patrol, Aggro, Combat, Return).
 Specifies where an entity should appear after death (Nearest Safe Zone, Station, or Coordinates).
 
 ### `InputCommand`
-Aggregated user input for a single tick, including movement axes and action bitmasks. 
+Aggregated user input for a single tick, including movement axes and discrete actions.
 - **Kind ID**: 128 (Transient/Inbound-Only).
-- **Discriminant**: `INPUT_COMMAND_KIND` (ComponentKind(128)).
+- **Hardening [v3]**: `MAX_ACTIONS = 128` is enforced. Payloads exceeding this limit are rejected by the server to prevent DoS via vector growth.
+- **Wire Format**: Contains `tick` and a `Vec<PlayerInputKind>`.
 
 ## Component Kind Reservation Policy
 

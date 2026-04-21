@@ -112,9 +112,9 @@ pub trait WorldState: Send {
 
     /// Extracts discrete game events that should be sent reliably.
     ///
-    /// Returns a list of `(Target ClientId, Raw Payload)`.
+    /// Returns a list of `(Target ClientId, WireEvent)`.
     /// If `ClientId` is `None`, the event should be broadcast to all authenticated clients.
-    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, Vec<u8>)> {
+    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, crate::events::WireEvent)> {
         Vec::new()
     }
 

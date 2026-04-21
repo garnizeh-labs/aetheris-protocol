@@ -191,6 +191,8 @@ pub struct MockWorldState {
     pub pending_deltas: Mutex<Vec<ReplicationEvent>>,
     /// Thread-safe vector of all updates received via `apply_updates`.
     pub applied_updates: Mutex<Vec<(ClientId, ComponentUpdate)>>,
+    /// Thread-safe vector of manually queued reliable events.
+    pub pending_reliable: Mutex<Vec<(Option<ClientId>, crate::events::WireEvent)>>,
 }
 
 impl MockWorldState {
@@ -203,6 +205,7 @@ impl MockWorldState {
             reverse_bimap: HashMap::new(),
             pending_deltas: Mutex::new(Vec::new()),
             applied_updates: Mutex::new(Vec::new()),
+            pending_reliable: Mutex::new(Vec::new()),
         }
     }
 
@@ -265,6 +268,11 @@ impl WorldState for MockWorldState {
             .lock()
             .unwrap()
             .extend(updates.iter().cloned());
+    }
+
+    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, crate::events::WireEvent)> {
+        let mut queued = self.pending_reliable.lock().unwrap();
+        std::mem::take(&mut *queued)
     }
 
     fn simulate(&mut self) {

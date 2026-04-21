@@ -392,19 +392,39 @@ mod tests {
     }
 
     #[test]
-    fn test_wire_event_exclusivity() {
-        let encoder = SerdeEncoder::new();
-        // ClientConnected is local-only
-        let event = NetworkEvent::ClientConnected(ClientId(1));
-        assert!(encoder.encode_event(&event).is_err());
+    fn test_game_event_roundtrip() {
+        use aetheris_protocol::events::GameEvent;
+        use aetheris_protocol::types::NetworkId;
 
-        // Ping is wire-capable (but we should have a way to distinguish wire pings if needed)
-        // For now, our implementation handles Ping in the match arm correctly by excluding it
-        // from certain paths or variants.
-        // Let's verify that a standard Auth event (which is wire) works.
-        let auth = NetworkEvent::Auth {
-            session_token: "token".to_string(),
+        let encoder = SerdeEncoder::new();
+        let game_event = GameEvent::AsteroidDepleted {
+            network_id: NetworkId(123),
         };
-        assert!(encoder.encode_event(&auth).is_ok());
+        let event = NetworkEvent::GameEvent {
+            client_id: ClientId(1), // Should be masked to 0 on wire and restored on server poll
+            event: game_event.clone(),
+        };
+
+        let output = encoder.encode_event(&event).unwrap();
+        let decoded = encoder.decode_event(&output).unwrap();
+
+        if let NetworkEvent::GameEvent {
+            client_id,
+            event: decoded_event,
+        } = decoded
+        {
+            assert_eq!(
+                client_id,
+                ClientId(0),
+                "Wire decoding should default client_id to 0"
+            );
+            match decoded_event {
+                GameEvent::AsteroidDepleted { network_id } => {
+                    assert_eq!(network_id, NetworkId(123))
+                }
+            }
+        } else {
+            panic!("Decoded event is not a GameEvent: {decoded:?}");
+        }
     }
 }

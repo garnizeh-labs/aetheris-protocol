@@ -1,5 +1,5 @@
 //! Protocol-level primitive types.
-pub const PROTOCOL_VERSION: u32 = 2;
+pub const PROTOCOL_VERSION: u32 = 3;
 
 use serde::{Deserialize, Serialize};
 
@@ -128,6 +128,10 @@ pub enum PlayerInputKind {
     FirePrimary,
 }
 
+/// Maximum allowed actions in a single InputCommand to prevent payload DoS.
+/// Chosen to stay well within MAX_SAFE_PAYLOAD_SIZE (1200 bytes).
+pub const MAX_ACTIONS: usize = 128;
+
 /// Aggregated user input for a single simulation tick.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputCommand {
@@ -148,6 +152,17 @@ impl InputCommand {
             }
         }
         self
+    }
+
+    /// Validates the command against protocol constraints.
+    ///
+    /// # Errors
+    /// Returns an error message if the command exceeds `MAX_ACTIONS`.
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if self.actions.len() > MAX_ACTIONS {
+            return Err("Too many actions in InputCommand");
+        }
+        Ok(())
     }
 }
 

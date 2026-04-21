@@ -215,30 +215,89 @@ pub enum WireEvent {
     GameEvent(GameEvent),
 }
 
+impl WireEvent {
+    /// Converts a `WireEvent` into a `NetworkEvent` for a specific client context.
+    #[must_use]
+    pub fn into_network_event(self, client_id: crate::types::ClientId) -> NetworkEvent {
+        match self {
+            Self::Ping { tick } => NetworkEvent::Ping { client_id, tick },
+            Self::Pong { tick } => NetworkEvent::Pong { tick },
+            Self::Auth { session_token } => NetworkEvent::Auth { session_token },
+            Self::Fragment(fragment) => NetworkEvent::Fragment {
+                client_id,
+                fragment,
+            },
+            Self::StressTest { count, rotate } => NetworkEvent::StressTest {
+                client_id,
+                count,
+                rotate,
+            },
+            Self::Spawn {
+                entity_type,
+                x,
+                y,
+                rot,
+            } => NetworkEvent::Spawn {
+                client_id,
+                entity_type,
+                x,
+                y,
+                rot,
+            },
+            Self::ClearWorld => NetworkEvent::ClearWorld { client_id },
+            Self::GameEvent(event) => NetworkEvent::GameEvent { client_id, event },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_event_sizes_and_derives() {
-        let ev = NetworkEvent::ClientConnected(ClientId(1));
-        assert_eq!(ev, NetworkEvent::ClientConnected(ClientId(1)));
-
-        let re = ReplicationEvent {
-            network_id: NetworkId(1),
-            component_kind: ComponentKind(0),
-            payload: vec![1, 2, 3],
-            tick: 0,
-        };
-        assert_eq!(re.payload.len(), 3);
-        assert_eq!(
-            re,
-            ReplicationEvent {
-                network_id: NetworkId(1),
-                component_kind: ComponentKind(0),
-                payload: vec![1, 2, 3],
-                tick: 0,
+    fn test_network_event_is_wire() {
+        assert!(
+            NetworkEvent::Ping {
+                client_id: ClientId(1),
+                tick: 100
             }
+            .is_wire()
         );
+        assert!(
+            NetworkEvent::GameEvent {
+                client_id: ClientId(1),
+                event: GameEvent::AsteroidDepleted {
+                    network_id: NetworkId(1)
+                }
+            }
+            .is_wire()
+        );
+        assert!(!NetworkEvent::ClientConnected(ClientId(1)).is_wire());
+        assert!(!NetworkEvent::ClientDisconnected(ClientId(1)).is_wire());
+    }
+
+    #[test]
+    fn test_wire_event_conversion_roundtrip() {
+        let wire = WireEvent::GameEvent(GameEvent::AsteroidDepleted {
+            network_id: NetworkId(42),
+        });
+        let client_id = ClientId(7);
+        let network = wire.clone().into_network_event(client_id);
+
+        if let NetworkEvent::GameEvent {
+            client_id: cid,
+            event,
+        } = network
+        {
+            assert_eq!(cid, client_id);
+            assert_eq!(
+                event,
+                GameEvent::AsteroidDepleted {
+                    network_id: NetworkId(42)
+                }
+            );
+        } else {
+            panic!("Conversion failed to preserve GameEvent variant");
+        }
     }
 }
