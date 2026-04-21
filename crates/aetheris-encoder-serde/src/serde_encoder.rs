@@ -65,6 +65,7 @@ impl SerdeEncoder {
                 rot: *rot,
             },
             NetworkEvent::ClearWorld { .. } => WireEvent::ClearWorld,
+            NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
             NetworkEvent::ClientConnected(_)
             | NetworkEvent::ClientDisconnected(_)
             | NetworkEvent::UnreliableMessage { .. }
@@ -127,6 +128,10 @@ impl SerdeEncoder {
             },
             WireEvent::ClearWorld => NetworkEvent::ClearWorld {
                 client_id: ClientId(0),
+            },
+            WireEvent::GameEvent(event) => NetworkEvent::GameEvent {
+                client_id: ClientId(0),
+                event,
             },
         })
     }

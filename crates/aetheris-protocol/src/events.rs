@@ -1,6 +1,15 @@
+use crate::types::{ClientId, ComponentKind, NetworkId};
 use serde::{Deserialize, Serialize};
 
-use crate::types::{ClientId, ComponentKind, NetworkId};
+/// A reliable discrete game event (Phase 1 / VS-02).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GameEvent {
+    /// An asteroid was completely depleted of its ore.
+    AsteroidDepleted {
+        /// The network ID of the asteroid that was depleted.
+        network_id: NetworkId,
+    },
+}
 
 /// An event representing a fragment of a larger message.
 /// Used for MTU stability to prevent packet drops and enable reassembly.
@@ -128,6 +137,13 @@ pub enum NetworkEvent {
     },
     /// A local event indicating the client transport has been disconnected.
     Disconnected(ClientId),
+    /// A discrete game event (e.g. depletion, destruction).
+    GameEvent {
+        /// The client involved (or targeted).
+        client_id: ClientId,
+        /// The event data.
+        event: GameEvent,
+    },
 }
 
 impl NetworkEvent {
@@ -141,7 +157,8 @@ impl NetworkEvent {
             | Self::Fragment { .. }
             | Self::StressTest { .. }
             | Self::Spawn { .. }
-            | Self::ClearWorld { .. } => true,
+            | Self::ClearWorld { .. }
+            | Self::GameEvent { .. } => true,
             Self::ClientConnected(_)
             | Self::ClientDisconnected(_)
             | Self::UnreliableMessage { .. }
@@ -194,6 +211,8 @@ pub enum WireEvent {
     },
     /// A command to clear all entities from the world.
     ClearWorld,
+    /// A discrete game event.
+    GameEvent(GameEvent),
 }
 
 #[cfg(test)]

@@ -39,6 +39,15 @@ pub struct ComponentKind(pub u16);
 /// Tagged as Transient/Inbound-Only.
 pub const INPUT_COMMAND_KIND: ComponentKind = ComponentKind(128);
 
+/// Replicated component for the mining laser beam state.
+pub const MINING_BEAM_KIND: ComponentKind = ComponentKind(1024);
+
+/// Replicated component for ship cargo state (replicated to owner).
+pub const CARGO_HOLD_KIND: ComponentKind = ComponentKind(1025);
+
+/// Replicated component for asteroid ore depletion tracking.
+pub const ASTEROID_KIND: ComponentKind = ComponentKind(1026);
+
 /// Standard transform component used for replication (`ComponentKind` 1).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[repr(C)]
@@ -108,27 +117,59 @@ pub enum RespawnLocation {
     Coordinate(f32, f32),
 }
 
+/// Individual input actions performed by a player in a single tick.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum PlayerInputKind {
+    /// Directional thrust/movement.
+    Move { x: f32, y: f32 },
+    /// Toggle mining beam on a specific target.
+    ToggleMining { target: NetworkId },
+    /// Fire primary weapon (for VS-03).
+    FirePrimary,
+}
+
 /// Aggregated user input for a single simulation tick.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputCommand {
     /// The client-side tick this input was generated at.
     pub tick: u64,
-    /// Movement X [-1.0, 1.0]
-    pub move_x: f32,
-    /// Movement Y [-1.0, 1.0]
-    pub move_y: f32,
-    /// Bitmask for actions (M1028 bits: 1=Primary, 2=Secondary, 4=Interact).
-    pub actions: u32,
+    /// List of actions performed in this tick.
+    pub actions: Vec<PlayerInputKind>,
 }
 
 impl InputCommand {
-    /// Returns a new `InputCommand` with `move_x` and `move_y` clamped to the [-1.0, 1.0] range.
+    /// Returns a new `InputCommand` with all `Move` inputs clamped to [-1.0, 1.0].
     #[must_use]
     pub fn clamped(mut self) -> Self {
-        self.move_x = self.move_x.clamp(-1.0, 1.0);
-        self.move_y = self.move_y.clamp(-1.0, 1.0);
+        for action in &mut self.actions {
+            if let PlayerInputKind::Move { x, y } = action {
+                *x = x.clamp(-1.0, 1.0);
+                *y = y.clamp(-1.0, 1.0);
+            }
+        }
         self
     }
+}
+
+/// Replicated state for a ship's mining beam.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct MiningBeam {
+    pub active: bool,
+    pub target: Option<NetworkId>,
+}
+
+/// Replicated state for a ship's cargo hold.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct CargoHold {
+    pub ore_count: u16,
+    pub capacity: u16,
+}
+
+/// Replicated state for an asteroid's resource depletion.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct Asteroid {
+    pub ore_remaining: u16,
+    pub total_capacity: u16,
 }
 
 /// Basic vitals for any ship entity.
@@ -256,23 +297,27 @@ mod tests {
     fn test_input_command_clamping() {
         let cmd = InputCommand {
             tick: 1,
-            move_x: 2.0,
-            move_y: -5.0,
-            actions: 0,
+            actions: vec![PlayerInputKind::Move { x: 2.0, y: -5.0 }],
         };
         let clamped = cmd.clamped();
-        assert!((clamped.move_x - 1.0).abs() < f32::EPSILON);
-        assert!((clamped.move_y - -1.0).abs() < f32::EPSILON);
+        if let PlayerInputKind::Move { x, y } = clamped.actions[0] {
+            assert!((x - 1.0).abs() < f32::EPSILON);
+            assert!((y - -1.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected Move action");
+        }
 
         let valid = InputCommand {
             tick: 1,
-            move_x: 0.5,
-            move_y: -0.2,
-            actions: 0,
+            actions: vec![PlayerInputKind::Move { x: 0.5, y: -0.2 }],
         };
         let clamped = valid.clamped();
-        assert!((clamped.move_x - 0.5).abs() < f32::EPSILON);
-        assert!((clamped.move_y - -0.2).abs() < f32::EPSILON);
+        if let PlayerInputKind::Move { x, y } = clamped.actions[0] {
+            assert!((x - 0.5).abs() < f32::EPSILON);
+            assert!((y - -0.2).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected Move action");
+        }
     }
 
     #[test]

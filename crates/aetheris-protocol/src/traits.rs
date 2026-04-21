@@ -110,6 +110,14 @@ pub trait WorldState: Send {
     /// directly to the `Encoder` for serialization.
     fn extract_deltas(&mut self) -> Vec<ReplicationEvent>;
 
+    /// Extracts discrete game events that should be sent reliably.
+    ///
+    /// Returns a list of `(Target ClientId, Raw Payload)`.
+    /// If `ClientId` is `None`, the event should be broadcast to all authenticated clients.
+    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, Vec<u8>)> {
+        Vec::new()
+    }
+
     /// Injects parsed state updates from the network into the ECS.
     ///
     /// On the server, these are client inputs (movement commands, actions).
