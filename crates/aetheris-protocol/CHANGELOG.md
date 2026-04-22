@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.12] - 2026-04-22
+
+### 🚀 Features
+
+- *(protocol)* Consolidate VS-05 and VS-06 protocol changes
+- *(protocol)* Add RoomName and PermissionString types with validation for maximum byte length
+
+### 📚 Documentation
+
+- *(protocol)* Document size limits for RoomDefinition string fields and add VS-05/VS-06 API coverage to PROTOCOL_DESIGN
 ## [0.2.11] - 2026-04-21
 
 ### 🚀 Features
