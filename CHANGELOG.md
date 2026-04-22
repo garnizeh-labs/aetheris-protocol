@@ -1,4 +1,10 @@
-## [0.2.0] - 2026-04-18
+## [0.2.13] - 2026-04-22
+
+### 🚀 Features
+
+- *(protocol)* Add `ReplicationBatch` variant to `NetworkEvent` and `WireEvent` to support grouping multiple entity updates into a single network payload.
+
+## [0.2.12] - 2026-04-22
 
 ### 🚀 Features
 

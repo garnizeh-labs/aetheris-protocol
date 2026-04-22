@@ -173,6 +173,13 @@ pub enum NetworkEvent {
         /// The event data.
         event: GameEvent,
     },
+    /// A batch of replication updates sent together to save bandwidth/packets.
+    ReplicationBatch {
+        /// The client that should receive the batch.
+        client_id: ClientId,
+        /// The collection of updates.
+        events: Vec<ReplicationEvent>,
+    },
 }
 
 impl NetworkEvent {
@@ -189,7 +196,8 @@ impl NetworkEvent {
             | Self::ClearWorld { .. }
             | Self::StartSession { .. }
             | Self::RequestSystemManifest { .. }
-            | Self::GameEvent { .. } => true,
+            | Self::GameEvent { .. }
+            | Self::ReplicationBatch { .. } => true,
             Self::ClientConnected(_)
             | Self::ClientDisconnected(_)
             | Self::UnreliableMessage { .. }
@@ -248,6 +256,8 @@ pub enum WireEvent {
     RequestSystemManifest,
     /// A discrete game event.
     GameEvent(GameEvent),
+    /// A batch of replication updates.
+    ReplicationBatch(Vec<ReplicationEvent>),
 }
 
 impl WireEvent {
@@ -283,6 +293,7 @@ impl WireEvent {
             Self::StartSession => NetworkEvent::StartSession { client_id },
             Self::RequestSystemManifest => NetworkEvent::RequestSystemManifest { client_id },
             Self::GameEvent(event) => NetworkEvent::GameEvent { client_id, event },
+            Self::ReplicationBatch(events) => NetworkEvent::ReplicationBatch { client_id, events },
         }
     }
 }
@@ -306,6 +317,13 @@ mod tests {
                 event: GameEvent::AsteroidDepleted {
                     network_id: NetworkId(1)
                 }
+            }
+            .is_wire()
+        );
+        assert!(
+            NetworkEvent::ReplicationBatch {
+                client_id: ClientId(1),
+                events: vec![]
             }
             .is_wire()
         );
@@ -335,6 +353,30 @@ mod tests {
             );
         } else {
             panic!("Conversion failed to preserve GameEvent variant");
+        }
+
+        // Test ReplicationBatch conversion
+        let event = ReplicationEvent {
+            network_id: NetworkId(1),
+            component_kind: ComponentKind(1),
+            payload: vec![1, 2, 3],
+            tick: 100,
+        };
+        let batch_wire = WireEvent::ReplicationBatch(vec![event.clone()]);
+        let batch_network = batch_wire.into_network_event(client_id);
+        if let NetworkEvent::ReplicationBatch {
+            client_id: cid,
+            events,
+        } = batch_network
+        {
+            assert_eq!(cid, client_id);
+            assert!(!events.is_empty());
+            assert_eq!(events[0].tick, 100);
+            assert_eq!(events[0].payload, vec![1, 2, 3]);
+            assert_eq!(events[0].network_id, NetworkId(1));
+            assert_eq!(events[0].component_kind, ComponentKind(1));
+        } else {
+            panic!("Conversion failed to preserve ReplicationBatch variant");
         }
     }
 }
