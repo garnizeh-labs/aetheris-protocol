@@ -133,6 +133,13 @@ pub trait WorldState: Send {
     /// Runs a single simulation frame for the ECS.
     fn simulate(&mut self) {}
 
+    /// Called once per tick after `extract_deltas`, before the next `advance_tick`.
+    ///
+    /// Implementations should use this to clear ECS change-detection trackers so that
+    /// only mutations from the *next* simulation step appear as changed in the following
+    /// extraction.  The default no-op is safe for non-Bevy adapters.
+    fn post_extract(&mut self) {}
+
     /// Spawns a new network-replicated entity and returns its `NetworkId`.
     fn spawn_networked(&mut self) -> NetworkId;
 
@@ -156,8 +163,59 @@ pub trait WorldState: Send {
         self.spawn_networked() // Fallback to basic networked spawn
     }
 
+    /// Spawns a new network-replicated entity of a specific kind for a specific client.
+    fn spawn_kind_for(
+        &mut self,
+        kind: u16,
+        x: f32,
+        y: f32,
+        rot: f32,
+        _client_id: ClientId,
+    ) -> NetworkId {
+        self.spawn_kind(kind, x, y, rot)
+    }
+
+    /// Spawns the authoritative session ship for a client and marks it as
+    /// the possession target.
+    ///
+    /// The default implementation delegates to `spawn_kind_for`.  Adapters
+    /// that support a `SessionShip` marker component should override this to
+    /// attach that marker so the input pipeline can gate `InputCommand`
+    /// processing exclusively to the session ship.
+    fn spawn_session_ship(
+        &mut self,
+        kind: u16,
+        x: f32,
+        y: f32,
+        rot: f32,
+        client_id: ClientId,
+    ) -> NetworkId {
+        self.spawn_kind_for(kind, x, y, rot, client_id)
+    }
+
     /// Despawns all entities from the world.
     fn clear_world(&mut self) {}
+
+    /// Queues a reliable game event to be sent to a specific client (or all if None).
+    fn queue_reliable_event(
+        &mut self,
+        _client_id: Option<ClientId>,
+        _event: crate::events::GameEvent,
+    ) {
+    }
+
+    /// Setups the initial world state (e.g. Master Room).
+    fn setup_world(&mut self) {}
+
+    /// Returns the Room `network_id` for a given entity, if any.
+    fn get_entity_room(&self, _network_id: NetworkId) -> Option<NetworkId> {
+        None
+    }
+
+    /// Returns the Room `network_id` for a client's session ship, if any.
+    fn get_client_room(&self, _client_id: ClientId) -> Option<NetworkId> {
+        None
+    }
 }
 
 /// Defines the serialization strategy for network payloads.

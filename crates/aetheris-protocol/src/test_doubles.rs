@@ -285,7 +285,43 @@ impl WorldState for MockWorldState {
         self.spawn_networked()
     }
 
-    fn clear_world(&mut self) {}
+    fn spawn_kind_for(
+        &mut self,
+        _kind: u16,
+        _x: f32,
+        _y: f32,
+        _rot: f32,
+        _client_id: ClientId,
+    ) -> NetworkId {
+        self.spawn_networked()
+    }
+
+    fn spawn_session_ship(
+        &mut self,
+        _kind: u16,
+        _x: f32,
+        _y: f32,
+        _rot: f32,
+        _client_id: ClientId,
+    ) -> NetworkId {
+        self.spawn_networked()
+    }
+
+    fn queue_reliable_event(
+        &mut self,
+        client_id: Option<ClientId>,
+        event: crate::events::GameEvent,
+    ) {
+        self.pending_reliable
+            .lock()
+            .unwrap()
+            .push((client_id, event.into_wire_event()));
+    }
+
+    fn clear_world(&mut self) {
+        self.forward_bimap.clear();
+        self.reverse_bimap.clear();
+    }
 }
 
 /// Mock encoder that writes a dummy header byte (`0xAE`) in front of the payload.
@@ -365,6 +401,11 @@ impl Encoder for MockEncoder {
     fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
         match event {
             NetworkEvent::Auth { .. } => Ok(vec![b'A']),
+            NetworkEvent::StartSession { .. } => Ok(vec![b'S']),
+            NetworkEvent::RequestSystemManifest { .. } => Ok(vec![b'M']),
+            NetworkEvent::ClearWorld { .. } => Ok(vec![b'C']),
+            NetworkEvent::Fragment { .. } => Ok(vec![b'F']),
+            NetworkEvent::GameEvent { .. } => Ok(vec![b'G']),
             _ => Err(EncodeError::Io(std::io::Error::other(format!(
                 "MockEncoder: encoding not implemented for {event:?}"
             )))),

@@ -39,6 +39,15 @@ pub struct ComponentKind(pub u16);
 /// Tagged as Transient/Inbound-Only.
 pub const INPUT_COMMAND_KIND: ComponentKind = ComponentKind(128);
 
+/// Replicated component for Room Definition.
+pub const ROOM_DEFINITION_KIND: ComponentKind = ComponentKind(129);
+
+/// Replicated component for Room Bounds.
+pub const ROOM_BOUNDS_KIND: ComponentKind = ComponentKind(130);
+
+/// Replicated component for Room Membership.
+pub const ROOM_MEMBERSHIP_KIND: ComponentKind = ComponentKind(131);
+
 /// Replicated component for the mining laser beam state.
 pub const MINING_BEAM_KIND: ComponentKind = ComponentKind(1024);
 
@@ -139,6 +148,8 @@ pub struct InputCommand {
     pub tick: u64,
     /// List of actions performed in this tick.
     pub actions: Vec<PlayerInputKind>,
+    /// The tick of the last server state the client saw before sending this input.
+    pub last_seen_input_tick: Option<u64>,
 }
 
 impl InputCommand {
@@ -219,6 +230,41 @@ impl Default for ShipStats {
         }
     }
 }
+
+/// Access control policy for the room.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RoomAccessPolicy {
+    /// Anyone can enter.
+    Open,
+    /// Only clients with the specified permission can enter.
+    Permission(String),
+    /// Only explicitly invited clients can enter.
+    InviteOnly,
+    /// Locked — no one can enter.
+    Locked,
+}
+
+/// Defines a spatial region as a Room.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoomDefinition {
+    pub name: String,
+    pub capacity: u32,
+    pub access: RoomAccessPolicy,
+    pub is_template: bool,
+}
+
+/// Spatial bounds of the room in world coordinates.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RoomBounds {
+    pub min_x: f32,
+    pub min_y: f32,
+    pub max_x: f32,
+    pub max_y: f32,
+}
+
+/// Defines which Room an entity currently belongs to.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct RoomMembership(pub NetworkId);
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
@@ -313,6 +359,7 @@ mod tests {
         let cmd = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 2.0, y: -5.0 }],
+            last_seen_input_tick: None,
         };
         let clamped = cmd.clamped();
         if let PlayerInputKind::Move { x, y } = clamped.actions[0] {
@@ -325,6 +372,7 @@ mod tests {
         let valid = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 0.5, y: -0.2 }],
+            last_seen_input_tick: None,
         };
         let clamped = valid.clamped();
         if let PlayerInputKind::Move { x, y } = clamped.actions[0] {

@@ -1,5 +1,6 @@
 use crate::types::{ClientId, ComponentKind, NetworkId};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// A reliable discrete game event (Phase 1 / VS-02).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -9,6 +10,24 @@ pub enum GameEvent {
         /// The network ID of the asteroid that was depleted.
         network_id: NetworkId,
     },
+    /// Explicitly informs a client that they now own/control a specific entity.
+    Possession {
+        /// The network ID of the entity now owned by the client.
+        network_id: NetworkId,
+    },
+    /// Sends extensible server-side metadata (versions, counters, debug data).
+    SystemManifest {
+        /// The collection of metadata key-value pairs.
+        manifest: BTreeMap<String, String>,
+    },
+}
+
+impl GameEvent {
+    /// Converts a `GameEvent` into a `WireEvent`.
+    #[must_use]
+    pub fn into_wire_event(self) -> WireEvent {
+        WireEvent::GameEvent(self)
+    }
 }
 
 /// An event representing a fragment of a larger message.
@@ -135,6 +154,16 @@ pub enum NetworkEvent {
         /// The client that requested the clear.
         client_id: ClientId,
     },
+    /// Client requests to start a gameplay session: spawns the session ship and grants Possession.
+    StartSession {
+        /// The client starting the session.
+        client_id: ClientId,
+    },
+    /// A request from a client to receive the current system manifest.
+    RequestSystemManifest {
+        /// The client that requested the manifest.
+        client_id: ClientId,
+    },
     /// A local event indicating the client transport has been disconnected.
     Disconnected(ClientId),
     /// A discrete game event (e.g. depletion, destruction).
@@ -158,6 +187,8 @@ impl NetworkEvent {
             | Self::StressTest { .. }
             | Self::Spawn { .. }
             | Self::ClearWorld { .. }
+            | Self::StartSession { .. }
+            | Self::RequestSystemManifest { .. }
             | Self::GameEvent { .. } => true,
             Self::ClientConnected(_)
             | Self::ClientDisconnected(_)
@@ -211,6 +242,10 @@ pub enum WireEvent {
     },
     /// A command to clear all entities from the world.
     ClearWorld,
+    /// Client requests to start a gameplay session: spawns the session ship and grants Possession.
+    StartSession,
+    /// A request to receive the current system manifest.
+    RequestSystemManifest,
     /// A discrete game event.
     GameEvent(GameEvent),
 }
@@ -245,6 +280,8 @@ impl WireEvent {
                 rot,
             },
             Self::ClearWorld => NetworkEvent::ClearWorld { client_id },
+            Self::StartSession => NetworkEvent::StartSession { client_id },
+            Self::RequestSystemManifest => NetworkEvent::RequestSystemManifest { client_id },
             Self::GameEvent(event) => NetworkEvent::GameEvent { client_id, event },
         }
     }

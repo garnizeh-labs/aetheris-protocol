@@ -11,6 +11,9 @@ pub mod error;
 pub mod events;
 pub mod reassembler;
 pub mod traits;
+
+/// The current version of the Aetheris Protocol.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub mod types;
 
 pub use reassembler::Reassembler;
