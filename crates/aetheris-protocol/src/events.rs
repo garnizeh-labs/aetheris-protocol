@@ -173,6 +173,13 @@ pub enum NetworkEvent {
         /// The event data.
         event: GameEvent,
     },
+    /// A batch of replication updates sent together to save bandwidth/packets.
+    ReplicationBatch {
+        /// The client that should receive the batch.
+        client_id: ClientId,
+        /// The collection of updates.
+        events: Vec<ReplicationEvent>,
+    },
 }
 
 impl NetworkEvent {
@@ -189,7 +196,8 @@ impl NetworkEvent {
             | Self::ClearWorld { .. }
             | Self::StartSession { .. }
             | Self::RequestSystemManifest { .. }
-            | Self::GameEvent { .. } => true,
+            | Self::GameEvent { .. }
+            | Self::ReplicationBatch { .. } => true,
             Self::ClientConnected(_)
             | Self::ClientDisconnected(_)
             | Self::UnreliableMessage { .. }
@@ -248,6 +256,8 @@ pub enum WireEvent {
     RequestSystemManifest,
     /// A discrete game event.
     GameEvent(GameEvent),
+    /// A batch of replication updates.
+    ReplicationBatch(Vec<ReplicationEvent>),
 }
 
 impl WireEvent {
@@ -283,6 +293,7 @@ impl WireEvent {
             Self::StartSession => NetworkEvent::StartSession { client_id },
             Self::RequestSystemManifest => NetworkEvent::RequestSystemManifest { client_id },
             Self::GameEvent(event) => NetworkEvent::GameEvent { client_id, event },
+            Self::ReplicationBatch(events) => NetworkEvent::ReplicationBatch { client_id, events },
         }
     }
 }

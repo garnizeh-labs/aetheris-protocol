@@ -68,6 +68,9 @@ impl SerdeEncoder {
             NetworkEvent::StartSession { .. } => WireEvent::StartSession,
             NetworkEvent::RequestSystemManifest { .. } => WireEvent::RequestSystemManifest,
             NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
+            NetworkEvent::ReplicationBatch { events, .. } => {
+                WireEvent::ReplicationBatch(events.clone())
+            }
             NetworkEvent::ClientConnected(_)
             | NetworkEvent::ClientDisconnected(_)
             | NetworkEvent::UnreliableMessage { .. }
@@ -140,6 +143,10 @@ impl SerdeEncoder {
             WireEvent::GameEvent(event) => NetworkEvent::GameEvent {
                 client_id: ClientId(0),
                 event,
+            },
+            WireEvent::ReplicationBatch(events) => NetworkEvent::ReplicationBatch {
+                client_id: ClientId(0),
+                events,
             },
         })
     }
