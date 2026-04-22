@@ -236,7 +236,12 @@ impl Default for ShipStats {
 pub enum RoomAccessPolicy {
     /// Anyone can enter.
     Open,
-    /// Only clients with the specified permission can enter.
+    /// Only clients with the specified permission string can enter.
+    ///
+    /// The permission string is replicated verbatim in the wire format.
+    /// Callers **must** enforce a maximum length of **64 bytes** (UTF-8) before
+    /// storing or replicating this value to ensure the serialized payload stays
+    /// well within [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE).
     Permission(String),
     /// Only explicitly invited clients can enter.
     InviteOnly,
@@ -247,6 +252,12 @@ pub enum RoomAccessPolicy {
 /// Defines a spatial region as a Room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomDefinition {
+    /// Human-readable room identifier.
+    ///
+    /// Replicated verbatim in the wire format. Callers **must** enforce a
+    /// maximum length of **64 bytes** (UTF-8) before storing or replicating
+    /// this value to ensure the serialized payload stays well within
+    /// [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE).
     pub name: String,
     pub capacity: u32,
     pub access: RoomAccessPolicy,
