@@ -356,7 +356,13 @@ mod tests {
         }
 
         // Test ReplicationBatch conversion
-        let batch_wire = WireEvent::ReplicationBatch(vec![]);
+        let event = ReplicationEvent {
+            network_id: NetworkId(1),
+            component_kind: ComponentKind(1),
+            payload: vec![1, 2, 3],
+            tick: 100,
+        };
+        let batch_wire = WireEvent::ReplicationBatch(vec![event.clone()]);
         let batch_network = batch_wire.into_network_event(client_id);
         if let NetworkEvent::ReplicationBatch {
             client_id: cid,
@@ -364,7 +370,11 @@ mod tests {
         } = batch_network
         {
             assert_eq!(cid, client_id);
-            assert!(events.is_empty());
+            assert!(!events.is_empty());
+            assert_eq!(events[0].tick, 100);
+            assert_eq!(events[0].payload, vec![1, 2, 3]);
+            assert_eq!(events[0].network_id, NetworkId(1));
+            assert_eq!(events[0].component_kind, ComponentKind(1));
         } else {
             panic!("Conversion failed to preserve ReplicationBatch variant");
         }

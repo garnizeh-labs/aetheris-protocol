@@ -285,7 +285,7 @@ injects the `ClientId` — it is **not** transmitted on the wire.
 | `RequestSystemManifest` | ~4 bytes | Tag only (unit variant) |
 | `Possession { network_id }` | ~12 bytes | Tag + u64 |
 | `SystemManifest { manifest }` | variable | Tag + MsgPack map; 4–6 keys ≈ 80–120 bytes |
-| `ReplicationBatch { events }` | variable | Tag + Array of updates; capped by MTU (1200) |
+| `ReplicationBatch { events }` | variable | Tag + Array of updates; capped by MAX_SAFE_PAYLOAD_SIZE (1200). Never send a payload larger than MAX_SAFE_PAYLOAD_SIZE without fragmenting; use Reassembler to buffer inbound fragments per client. |
 
 ### `ReplicationEvent` & `ComponentUpdate`
 
