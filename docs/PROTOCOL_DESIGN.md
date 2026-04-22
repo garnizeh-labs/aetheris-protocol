@@ -61,9 +61,11 @@ pub trait WorldState: Send {
     /// Despawns a network-replicated entity by its NetworkId.
     fn despawn_networked(&mut self, network_id: NetworkId) -> Result<(), WorldError>;
 
-    /// [REQUIRED] Spawns an entity of a specific kind (type discriminant) at the
-    /// given position.  This is the core spawn primitive that all other spawn
-    /// helpers delegate to by default.  Implementors must override this method.
+    /// [DEFAULT] Spawns an entity of a specific kind (type discriminant) at the
+    /// given position.  A default implementation exists that delegates to
+    /// `spawn_networked`, ignoring `kind`, `x`, `y`, and `rot`.  Implementors
+    /// may override `spawn_kind` when the kind or position must be stored on the
+    /// entity (e.g. to set a `Transform` component or a type discriminant).
     fn spawn_kind(&mut self, kind: u16, x: f32, y: f32, rot: f32) -> NetworkId;
 
     /// [DEFAULT] Spawns an entity of a specific kind owned by `client_id`.
@@ -93,13 +95,18 @@ pub trait WorldState: Send {
         client_id: ClientId,
     ) -> NetworkId { self.spawn_kind_for(kind, x, y, rot, client_id) }
 
-    /// Despawns all entities and rebuilds initial world state (e.g. Master Room).
+    /// Removes/despawns all entities from the world.  Does **not** rebuild any
+    /// initial state — callers must invoke `setup_world` afterwards if they need
+    /// the room topology restored.
     fn clear_world(&mut self) {}
 
     // --- Room management ---
 
-    /// Initialises the world's initial room topology (e.g. spawns the Master Room).
-    /// Called once on server startup and after `clear_world`.
+    /// Initialises (or re-initialises) the initial room topology, e.g. spawning
+    /// the Master Room.  Called once on server startup and again after
+    /// `clear_world` to restore the baseline world state.  `clear_world` and
+    /// `setup_world` are intentionally separate so callers control whether a
+    /// wipe is followed by a bootstrap.
     fn setup_world(&mut self) {}
 
     /// Returns the Room `NetworkId` that an entity belongs to.
