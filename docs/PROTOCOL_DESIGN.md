@@ -24,32 +24,120 @@ The `WorldState` trait provides a facade over the underlying Entity Component Sy
 
 ```rust
 pub trait WorldState: Send {
+    // --- Identity mapping ---
+
     /// Maps a protocol-level NetworkId to the ECS's local entity handle.
     fn get_local_id(&self, network_id: NetworkId) -> Option<LocalId>;
 
     /// Maps a local ECS entity handle back to its protocol-level NetworkId.
     fn get_network_id(&self, local_id: LocalId) -> Option<NetworkId>;
 
-    /// Extracts replication deltas for all components modified since the last tick.
-    fn extract_deltas(&mut self) -> Vec<ReplicationEvent>;
+    // --- Tick pipeline ---
 
-    /// Extracts discrete game events that should be sent reliably.
-    /// [v3] Returns typed WireEvent payloads for centralized serialization.
-    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, WireEvent)>;
+    /// Called once per tick before inputs are applied (advances change-detection).
+    fn advance_tick(&mut self) {}
 
     /// Injects parsed state updates from the network into the ECS.
     fn apply_updates(&mut self, updates: &[(ClientId, ComponentUpdate)]);
 
     /// Runs a single simulation frame for the ECS (Stage 3).
-    fn simulate(&mut self);
+    fn simulate(&mut self) {}
 
-    /// Spawn a new networked entity.
+    /// Extracts replication deltas for all components modified since the last tick.
+    fn extract_deltas(&mut self) -> Vec<ReplicationEvent>;
+
+    /// Extracts discrete game events that should be sent reliably.
+    /// Returns `(target ClientId, WireEvent)` pairs; `None` target = broadcast.
+    fn extract_reliable_events(&mut self) -> Vec<(Option<ClientId>, WireEvent)> { vec![] }
+
+    /// Called once per tick after extraction to clear ECS change-detection trackers.
+    fn post_extract(&mut self) {}
+
+    // --- Spawn / despawn ---
+
+    /// Spawns a new network-replicated entity.
     fn spawn_networked(&mut self) -> NetworkId;
 
     /// Despawns a network-replicated entity by its NetworkId.
     fn despawn_networked(&mut self, network_id: NetworkId) -> Result<(), WorldError>;
+
+    /// [DEFAULT] Spawns an entity of a specific kind (type discriminant) at the
+    /// given position.  A default implementation exists that delegates to
+    /// `spawn_networked`, ignoring `kind`, `x`, `y`, and `rot`.  Implementors
+    /// may override `spawn_kind` when the kind or position must be stored on the
+    /// entity (e.g. to set a `Transform` component or a type discriminant).
+    fn spawn_kind(&mut self, kind: u16, x: f32, y: f32, rot: f32) -> NetworkId;
+
+    /// [DEFAULT] Spawns an entity of a specific kind owned by `client_id`.
+    /// Attaches `Ownership(client_id)` so the input pipeline can gate
+    /// `InputCommand` processing to the correct owner.
+    ///
+    /// The default implementation delegates to `spawn_kind(kind, x, y, rot)`,
+    /// ignoring `client_id`.  Implementors only need to override this when they
+    /// must attach ownership metadata (e.g. the `Ownership(ClientId)` Bevy
+    /// component) to the spawned entity.
+    fn spawn_kind_for(
+        &mut self,
+        kind: u16, x: f32, y: f32, rot: f32,
+        client_id: ClientId,
+    ) -> NetworkId { self.spawn_kind(kind, x, y, rot) }
+
+    /// [DEFAULT] Spawns the authoritative session ship for a client.
+    ///
+    /// The default implementation delegates to `spawn_kind_for(kind, x, y, rot,
+    /// client_id)`.  Implementors only need to override this when they must also
+    /// attach a `SessionShip` marker component and register the client in the
+    /// room index so that `get_client_room` returns the correct room without an
+    /// O(n) fallback scan.
+    fn spawn_session_ship(
+        &mut self,
+        kind: u16, x: f32, y: f32, rot: f32,
+        client_id: ClientId,
+    ) -> NetworkId { self.spawn_kind_for(kind, x, y, rot, client_id) }
+
+    /// Removes/despawns all entities from the world.  Does **not** rebuild any
+    /// initial state — callers must invoke `setup_world` afterwards if they need
+    /// the room topology restored.
+    fn clear_world(&mut self) {}
+
+    // --- Room management ---
+
+    /// Initialises (or re-initialises) the initial room topology, e.g. spawning
+    /// the Master Room.  Called once on server startup and again after
+    /// `clear_world` to restore the baseline world state.  `clear_world` and
+    /// `setup_world` are intentionally separate so callers control whether a
+    /// wipe is followed by a bootstrap.
+    fn setup_world(&mut self) {}
+
+    /// Returns the Room `NetworkId` that an entity belongs to.
+    fn get_entity_room(&self, network_id: NetworkId) -> Option<NetworkId> { None }
+
+    /// Returns the Room `NetworkId` of a client's session ship.
+    /// Used by the tick scheduler to scope delta delivery to in-room clients.
+    fn get_client_room(&self, client_id: ClientId) -> Option<NetworkId> { None }
+
+    // --- Reliable events ---
+
+    /// Queues a `GameEvent` to be sent reliably to `client_id` (or all if `None`).
+    fn queue_reliable_event(
+        &mut self,
+        client_id: Option<ClientId>,
+        event: GameEvent,
+    ) {}
 }
 ```
+
+#### New methods in v3 (VS-05 / VS-06)
+
+| Method | Required? | Purpose |
+|---|---|---|
+| `spawn_kind_for` | Default | Delegates to `spawn_kind`; override to attach `Ownership(ClientId)` |
+| `spawn_session_ship` | Default | Delegates to `spawn_kind_for`; override to attach `SessionShip` marker + `RoomIndex` registration |
+| `queue_reliable_event` | Default | Enqueue typed `GameEvent` without direct transport access |
+| `setup_world` | Default | Idempotent room bootstrap (called at startup + after `clear_world`) |
+| `get_entity_room` | Default | Entity → Room lookup for AoI delta scoping |
+| `get_client_room` | Default | Client → Room lookup for per-tick target resolution |
+| `post_extract` | Default | Resets ECS change-detection after delta extraction |
 
 ### 2. `GameTransport` — Network Abstraction
 
@@ -107,20 +195,91 @@ pub trait Encoder: Send + Sync {
 
 ```rust
 pub enum NetworkEvent {
-    /// A new client has connected.
+    // Transport layer
     ClientConnected(ClientId),
-    /// A client has disconnected.
     ClientDisconnected(ClientId),
-    /// Raw unreliable data received.
+    Disconnected(ClientId),         // local transport drop
+    SessionClosed(ClientId),        // WebTransport session closed
+    StreamReset(ClientId),          // WebTransport stream reset
     UnreliableMessage { client_id: ClientId, data: Vec<u8> },
-    /// Raw reliable data received.
-    ReliableMessage { client_id: ClientId, data: Vec<u8> },
-    /// Heartbeat ping from a client.
+    ReliableMessage   { client_id: ClientId, data: Vec<u8> },
+    Fragment          { client_id: ClientId, fragment: FragmentedEvent },
+
+    // Heartbeat
     Ping { client_id: ClientId, tick: u64 },
-    /// Heartbeat pong response (Latency RTT).
-    Pong { client_id: ClientId, tick: u64 },
+    Pong { tick: u64 },
+
+    // Auth / session
+    Auth { session_token: String },
+
+    // Playground / stress test
+    StressTest { client_id: ClientId, count: u16, rotate: bool },
+    Spawn      { client_id: ClientId, entity_type: u16, x: f32, y: f32, rot: f32 },
+    ClearWorld { client_id: ClientId },
+
+    // [v3 — VS-05] Session lifecycle
+    /// Requests the server to spawn the client's session ship and issue Possession.
+    StartSession { client_id: ClientId },
+    /// Requests the current system manifest (versions, tick rate, counters).
+    RequestSystemManifest { client_id: ClientId },
+
+    // Discrete game events (reliable)
+    GameEvent { client_id: ClientId, event: GameEvent },
 }
 ```
+
+### `GameEvent` (reliable discrete events)
+
+```rust
+pub enum GameEvent {
+    /// An asteroid entity has been fully depleted.
+    AsteroidDepleted { network_id: NetworkId },
+
+    // [v3 — VS-05] Session lifecycle events
+    /// Server informs the client that it now owns/controls `network_id`.
+    /// Sent once per `StartSession`, after the session ship is spawned.
+    Possession { network_id: NetworkId },
+
+    /// Server sends extensible metadata to the client.
+    /// Keys: `"version_server"`, `"version_protocol"`, `"tick_rate"`,
+    ///        `"clients_active"` (admin-gated).
+    /// Values are always UTF-8 strings; callers must parse to the target type.
+    SystemManifest { manifest: BTreeMap<String, String> },
+}
+```
+
+### `WireEvent` (over-the-wire subset of `NetworkEvent`)
+
+`WireEvent` is the serializable enum — it excludes local-only variants
+(`ClientConnected`, `UnreliableMessage`, etc.) that never cross the wire.
+
+```rust
+pub enum WireEvent {
+    Ping { tick: u64 },
+    Pong { tick: u64 },
+    Auth { session_token: String },
+    StressTest { count: u16, rotate: bool },
+    Spawn      { entity_type: u16, x: f32, y: f32, rot: f32 },
+    ClearWorld,
+    // [v3 — VS-05]
+    StartSession,
+    RequestSystemManifest,
+    GameEvent(GameEvent),
+    Fragment(FragmentedEvent),
+}
+```
+
+Conversion: `WireEvent::into_network_event(client_id: ClientId) -> NetworkEvent`
+injects the `ClientId` — it is **not** transmitted on the wire.
+
+#### Wire format (Phase 1 — MessagePack)
+
+| Variant | Approx. encoded size | Notes |
+|---|---|---|
+| `StartSession` | ~4 bytes | Tag only (unit variant) |
+| `RequestSystemManifest` | ~4 bytes | Tag only (unit variant) |
+| `Possession { network_id }` | ~12 bytes | Tag + u64 |
+| `SystemManifest { manifest }` | variable | Tag + MsgPack map; 4–6 keys ≈ 80–120 bytes |
 
 ### `ReplicationEvent` & `ComponentUpdate`
 
@@ -141,28 +300,37 @@ pub struct ComponentUpdate {
 ```
 
 ### `ShipClass`
+
 Used for rendering and stat selection (Interceptor, Dreadnought, Hauler).
 
 ### `WeaponId`
+
 A `u8` unique identifier for a static weapon type definition.
 
 ### `SectorId`
+
 A `u64` globally unique identifier for a persistent sector or room instance.
 
 ### `OreType`
+
 Defines material types that can be extracted from asteroids (e.g., `RawOre`).
 
 ### `ProjectileType`
+
 Classification for projectile delivery and VFX (e.g., `PulseLaser`, `SeekerMissile`).
 
 ### `AIState`
+
 NPC behavior machine state (Patrol, Aggro, Combat, Return).
 
 ### `RespawnLocation`
+
 Specifies where an entity should appear after death (Nearest Safe Zone, Station, or Coordinates).
 
 ### `InputCommand`
+
 Aggregated user input for a single tick, including movement axes and discrete actions.
+
 - **Kind ID**: 128 (Transient/Inbound-Only).
 - **Hardening [v3]**: `MAX_ACTIONS = 128` is enforced. Payloads exceeding this limit are rejected by the server to prevent DoS via vector growth.
 - **Wire Format**: Contains `tick` and a `Vec<PlayerInputKind>`.
@@ -180,6 +348,7 @@ To prevent ID collisions across official extensions and community plugins, the `
 | **32768–65535** | **Reserved** | Reserved for non-replicated or inbound-only variants. |
 
 ### `ShipStats`
+
 Authoritative vitals for ship entities, including HP, Shields, Energy, and regeneration rates.
 
 ### `SuspicionScore` (Security)
@@ -189,9 +358,9 @@ The `SuspicionScore` is a `u32` value assigned to every entity to track potentia
 - **Type**: `u32` (capped at `u32::MAX`)
 - **Persistence**: Ephemeral (in-memory only)
 - **Thresholds**:
-    - **Baseline**: 0–99
-    - **Elevated**: 100–499
-    - **Critical**: 500+
+  - **Baseline**: 0–99
+  - **Elevated**: 100–499
+  - **Critical**: 500+
 
 ## Cryptographic Integrity — Merkle Hash Chain
 
@@ -204,6 +373,7 @@ The hash for the $n$-th event of an entity is computed as:
 $$H_n = \text{SHA-256}(H_{n-1} \parallel \text{tick} \parallel \text{network\_id} \parallel \text{component\_kind} \parallel \text{payload})$$
 
 Where:
+
 - $H_{n-1}$ is the hash of the previous event (32 bytes).
 - $H_0$ (Genesis) = $\text{SHA-256}(\text{network\_id} \parallel \text{"GENESIS"})$.
 - $\parallel$ denotes concatenation.

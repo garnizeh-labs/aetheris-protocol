@@ -39,6 +39,15 @@ pub struct ComponentKind(pub u16);
 /// Tagged as Transient/Inbound-Only.
 pub const INPUT_COMMAND_KIND: ComponentKind = ComponentKind(128);
 
+/// Replicated component for Room Definition.
+pub const ROOM_DEFINITION_KIND: ComponentKind = ComponentKind(129);
+
+/// Replicated component for Room Bounds.
+pub const ROOM_BOUNDS_KIND: ComponentKind = ComponentKind(130);
+
+/// Replicated component for Room Membership.
+pub const ROOM_MEMBERSHIP_KIND: ComponentKind = ComponentKind(131);
+
 /// Replicated component for the mining laser beam state.
 pub const MINING_BEAM_KIND: ComponentKind = ComponentKind(1024);
 
@@ -139,6 +148,8 @@ pub struct InputCommand {
     pub tick: u64,
     /// List of actions performed in this tick.
     pub actions: Vec<PlayerInputKind>,
+    /// The tick of the last server state the client saw before sending this input.
+    pub last_seen_input_tick: Option<u64>,
 }
 
 impl InputCommand {
@@ -219,6 +230,177 @@ impl Default for ShipStats {
         }
     }
 }
+
+/// Maximum byte length (UTF-8) for [`RoomName`] and [`PermissionString`].
+///
+/// Chosen well below [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE)
+/// to leave ample room for the surrounding struct framing in the wire format.
+pub const MAX_ROOM_STRING_BYTES: usize = 64;
+
+/// Error returned when a [`RoomName`] or [`PermissionString`] exceeds the
+/// allowed byte length.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("string too long: {len} bytes exceeds the maximum of {max} bytes")]
+pub struct RoomStringError {
+    /// Actual byte length of the rejected string.
+    pub len: usize,
+    /// Maximum allowed byte length ([`MAX_ROOM_STRING_BYTES`]).
+    pub max: usize,
+}
+
+/// A validated room name.
+///
+/// Guaranteed not to exceed [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8).
+/// The limit is enforced at construction time via [`RoomName::new`] and at
+/// Serde decode time, so a value held in this type can never produce a payload
+/// that exceeds [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE).
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct RoomName(String);
+
+impl RoomName {
+    /// Creates a `RoomName`, returning [`RoomStringError`] if `s` exceeds
+    /// [`MAX_ROOM_STRING_BYTES`] bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RoomStringError`] if the byte length of `s` exceeds
+    /// [`MAX_ROOM_STRING_BYTES`].
+    #[must_use = "the validated RoomName must be used"]
+    pub fn new(s: impl Into<String>) -> Result<Self, RoomStringError> {
+        let s = s.into();
+        if s.len() > MAX_ROOM_STRING_BYTES {
+            return Err(RoomStringError {
+                len: s.len(),
+                max: MAX_ROOM_STRING_BYTES,
+            });
+        }
+        Ok(Self(s))
+    }
+
+    /// Returns the name as a string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for RoomName {
+    type Error = RoomStringError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::new(s)
+    }
+}
+
+impl From<RoomName> for String {
+    fn from(n: RoomName) -> String {
+        n.0
+    }
+}
+
+impl std::fmt::Display for RoomName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// A validated access-control permission token.
+///
+/// Guaranteed not to exceed [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8).
+/// Used by [`RoomAccessPolicy::Permission`].
+/// The limit is enforced at construction time via [`PermissionString::new`] and
+/// at Serde decode time.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct PermissionString(String);
+
+impl PermissionString {
+    /// Creates a `PermissionString`, returning [`RoomStringError`] if `s`
+    /// exceeds [`MAX_ROOM_STRING_BYTES`] bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RoomStringError`] if the byte length of `s` exceeds
+    /// [`MAX_ROOM_STRING_BYTES`].
+    #[must_use = "the validated PermissionString must be used"]
+    pub fn new(s: impl Into<String>) -> Result<Self, RoomStringError> {
+        let s = s.into();
+        if s.len() > MAX_ROOM_STRING_BYTES {
+            return Err(RoomStringError {
+                len: s.len(),
+                max: MAX_ROOM_STRING_BYTES,
+            });
+        }
+        Ok(Self(s))
+    }
+
+    /// Returns the permission token as a string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for PermissionString {
+    type Error = RoomStringError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::new(s)
+    }
+}
+
+impl From<PermissionString> for String {
+    fn from(p: PermissionString) -> String {
+        p.0
+    }
+}
+
+impl std::fmt::Display for PermissionString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// Access control policy for the room.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RoomAccessPolicy {
+    /// Anyone can enter.
+    Open,
+    /// Only clients holding the specified [`PermissionString`] token can enter.
+    ///
+    /// The token is replicated verbatim in the wire format and is guaranteed
+    /// not to exceed [`MAX_ROOM_STRING_BYTES`] bytes.
+    Permission(PermissionString),
+    /// Only explicitly invited clients can enter.
+    InviteOnly,
+    /// Locked — no one can enter.
+    Locked,
+}
+
+/// Defines a spatial region as a Room.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoomDefinition {
+    /// Human-readable room identifier.
+    ///
+    /// Replicated verbatim in the wire format. Guaranteed not to exceed
+    /// [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8) by the [`RoomName`] type.
+    pub name: RoomName,
+    pub capacity: u32,
+    pub access: RoomAccessPolicy,
+    pub is_template: bool,
+}
+
+/// Spatial bounds of the room in world coordinates.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RoomBounds {
+    pub min_x: f32,
+    pub min_y: f32,
+    pub max_x: f32,
+    pub max_y: f32,
+}
+
+/// Defines which Room an entity currently belongs to.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct RoomMembership(pub NetworkId);
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
@@ -313,6 +495,7 @@ mod tests {
         let cmd = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 2.0, y: -5.0 }],
+            last_seen_input_tick: None,
         };
         let clamped = cmd.clamped();
         if let PlayerInputKind::Move { x, y } = clamped.actions[0] {
@@ -325,6 +508,7 @@ mod tests {
         let valid = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 0.5, y: -0.2 }],
+            last_seen_input_tick: None,
         };
         let clamped = valid.clamped();
         if let PlayerInputKind::Move { x, y } = clamped.actions[0] {

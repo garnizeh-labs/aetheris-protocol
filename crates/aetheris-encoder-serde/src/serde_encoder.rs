@@ -65,6 +65,8 @@ impl SerdeEncoder {
                 rot: *rot,
             },
             NetworkEvent::ClearWorld { .. } => WireEvent::ClearWorld,
+            NetworkEvent::StartSession { .. } => WireEvent::StartSession,
+            NetworkEvent::RequestSystemManifest { .. } => WireEvent::RequestSystemManifest,
             NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
             NetworkEvent::ClientConnected(_)
             | NetworkEvent::ClientDisconnected(_)
@@ -127,6 +129,12 @@ impl SerdeEncoder {
                 rot,
             },
             WireEvent::ClearWorld => NetworkEvent::ClearWorld {
+                client_id: ClientId(0),
+            },
+            WireEvent::StartSession => NetworkEvent::StartSession {
+                client_id: ClientId(0),
+            },
+            WireEvent::RequestSystemManifest => NetworkEvent::RequestSystemManifest {
                 client_id: ClientId(0),
             },
             WireEvent::GameEvent(event) => NetworkEvent::GameEvent {
@@ -421,6 +429,9 @@ mod tests {
             match decoded_event {
                 GameEvent::AsteroidDepleted { network_id } => {
                     assert_eq!(network_id, NetworkId(123));
+                }
+                GameEvent::Possession { .. } | GameEvent::SystemManifest { .. } => {
+                    panic!("Unexpected event type in roundtrip test");
                 }
             }
         } else {
