@@ -61,26 +61,37 @@ pub trait WorldState: Send {
     /// Despawns a network-replicated entity by its NetworkId.
     fn despawn_networked(&mut self, network_id: NetworkId) -> Result<(), WorldError>;
 
-    /// Spawns an entity of a specific kind (type discriminant) at the given position.
+    /// [REQUIRED] Spawns an entity of a specific kind (type discriminant) at the
+    /// given position.  This is the core spawn primitive that all other spawn
+    /// helpers delegate to by default.  Implementors must override this method.
     fn spawn_kind(&mut self, kind: u16, x: f32, y: f32, rot: f32) -> NetworkId;
 
-    /// Spawns an entity of a specific kind owned by `client_id`.
+    /// [DEFAULT] Spawns an entity of a specific kind owned by `client_id`.
     /// Attaches `Ownership(client_id)` so the input pipeline can gate
     /// `InputCommand` processing to the correct owner.
+    ///
+    /// The default implementation delegates to `spawn_kind(kind, x, y, rot)`,
+    /// ignoring `client_id`.  Implementors only need to override this when they
+    /// must attach ownership metadata (e.g. the `Ownership(ClientId)` Bevy
+    /// component) to the spawned entity.
     fn spawn_kind_for(
         &mut self,
         kind: u16, x: f32, y: f32, rot: f32,
         client_id: ClientId,
-    ) -> NetworkId;
+    ) -> NetworkId { self.spawn_kind(kind, x, y, rot) }
 
-    /// Spawns the authoritative session ship for a client.
-    /// Implementations should attach a `SessionShip` marker and register the
-    /// client in the room index for fast `get_client_room` lookups.
+    /// [DEFAULT] Spawns the authoritative session ship for a client.
+    ///
+    /// The default implementation delegates to `spawn_kind_for(kind, x, y, rot,
+    /// client_id)`.  Implementors only need to override this when they must also
+    /// attach a `SessionShip` marker component and register the client in the
+    /// room index so that `get_client_room` returns the correct room without an
+    /// O(n) fallback scan.
     fn spawn_session_ship(
         &mut self,
         kind: u16, x: f32, y: f32, rot: f32,
         client_id: ClientId,
-    ) -> NetworkId;
+    ) -> NetworkId { self.spawn_kind_for(kind, x, y, rot, client_id) }
 
     /// Despawns all entities and rebuilds initial world state (e.g. Master Room).
     fn clear_world(&mut self) {}
@@ -111,15 +122,15 @@ pub trait WorldState: Send {
 
 #### New methods in v3 (VS-05 / VS-06)
 
-| Method | Purpose |
-|---|---|
-| `spawn_kind_for` | Spawn with `Ownership` — prerequisite for input gating |
-| `spawn_session_ship` | Spawn + `SessionShip` marker + `RoomIndex` registration |
-| `queue_reliable_event` | Enqueue typed `GameEvent` without direct transport access |
-| `setup_world` | Idempotent room bootstrap (called at startup + after `clear_world`) |
-| `get_entity_room` | Entity → Room lookup for AoI delta scoping |
-| `get_client_room` | Client → Room lookup for per-tick target resolution |
-| `post_extract` | Resets ECS change-detection after delta extraction |
+| Method | Required? | Purpose |
+|---|---|---|
+| `spawn_kind_for` | Default | Delegates to `spawn_kind`; override to attach `Ownership(ClientId)` |
+| `spawn_session_ship` | Default | Delegates to `spawn_kind_for`; override to attach `SessionShip` marker + `RoomIndex` registration |
+| `queue_reliable_event` | Default | Enqueue typed `GameEvent` without direct transport access |
+| `setup_world` | Default | Idempotent room bootstrap (called at startup + after `clear_world`) |
+| `get_entity_room` | Default | Entity → Room lookup for AoI delta scoping |
+| `get_client_room` | Default | Client → Room lookup for per-tick target resolution |
+| `post_extract` | Default | Resets ECS change-detection after delta extraction |
 
 ### 2. `GameTransport` — Network Abstraction
 
