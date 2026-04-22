@@ -320,6 +320,13 @@ mod tests {
             }
             .is_wire()
         );
+        assert!(
+            NetworkEvent::ReplicationBatch {
+                client_id: ClientId(1),
+                events: vec![]
+            }
+            .is_wire()
+        );
         assert!(!NetworkEvent::ClientConnected(ClientId(1)).is_wire());
         assert!(!NetworkEvent::ClientDisconnected(ClientId(1)).is_wire());
     }
@@ -346,6 +353,20 @@ mod tests {
             );
         } else {
             panic!("Conversion failed to preserve GameEvent variant");
+        }
+
+        // Test ReplicationBatch conversion
+        let batch_wire = WireEvent::ReplicationBatch(vec![]);
+        let batch_network = batch_wire.into_network_event(client_id);
+        if let NetworkEvent::ReplicationBatch {
+            client_id: cid,
+            events,
+        } = batch_network
+        {
+            assert_eq!(cid, client_id);
+            assert!(events.is_empty());
+        } else {
+            panic!("Conversion failed to preserve ReplicationBatch variant");
         }
     }
 }

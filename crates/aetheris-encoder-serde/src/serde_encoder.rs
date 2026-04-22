@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 use serde::{Deserialize, Serialize};
 
+use aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE;
 use aetheris_protocol::error::EncodeError;
 use aetheris_protocol::events::{ComponentUpdate, NetworkEvent, ReplicationEvent, WireEvent};
 use aetheris_protocol::traits::Encoder;
@@ -69,7 +70,17 @@ impl SerdeEncoder {
             NetworkEvent::RequestSystemManifest { .. } => WireEvent::RequestSystemManifest,
             NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
             NetworkEvent::ReplicationBatch { events, .. } => {
-                WireEvent::ReplicationBatch(events.clone())
+                let wire_event = WireEvent::ReplicationBatch(events.clone());
+                let encoded = rmp_serde::to_vec(&wire_event)
+                    .map_err(|e| EncodeError::Io(std::io::Error::other(e.to_string())))?;
+
+                if encoded.len() > MAX_SAFE_PAYLOAD_SIZE {
+                    return Err(EncodeError::BufferOverflow {
+                        needed: encoded.len(),
+                        available: MAX_SAFE_PAYLOAD_SIZE,
+                    });
+                }
+                return Ok(encoded);
             }
             NetworkEvent::ClientConnected(_)
             | NetworkEvent::ClientDisconnected(_)

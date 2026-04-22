@@ -1,8 +1,8 @@
 ---
-Version: 0.1.4 (Protocol v3)
+Version: 0.1.5 (Protocol v3)
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
-Last Updated: 2026-04-21
+Last Updated: 2026-04-22
 Authors: Team (Antigravity)
 Spec References: [PF-1000, M1020]
 Tier: 1
@@ -225,6 +225,10 @@ pub enum NetworkEvent {
 
     // Discrete game events (reliable)
     GameEvent { client_id: ClientId, event: GameEvent },
+
+    // [v3 — VS-06] Replication
+    /// A batch of replication updates sent together to save bandwidth/packets.
+    ReplicationBatch { client_id: ClientId, events: Vec<ReplicationEvent> },
 }
 ```
 
@@ -266,6 +270,7 @@ pub enum WireEvent {
     RequestSystemManifest,
     GameEvent(GameEvent),
     Fragment(FragmentedEvent),
+    ReplicationBatch(Vec<ReplicationEvent>),
 }
 ```
 
@@ -280,6 +285,7 @@ injects the `ClientId` — it is **not** transmitted on the wire.
 | `RequestSystemManifest` | ~4 bytes | Tag only (unit variant) |
 | `Possession { network_id }` | ~12 bytes | Tag + u64 |
 | `SystemManifest { manifest }` | variable | Tag + MsgPack map; 4–6 keys ≈ 80–120 bytes |
+| `ReplicationBatch { events }` | variable | Tag + Array of updates; capped by MTU (1200) |
 
 ### `ReplicationEvent` & `ComponentUpdate`
 
@@ -290,6 +296,28 @@ pub struct ReplicationEvent {
     pub payload: Vec<u8>,
     pub tick: u64,
 }
+
+#### Example: ReplicationBatch (JSON-equivalent of MsgPack)
+
+```json
+{
+  "variant": "ReplicationBatch",
+  "events": [
+    {
+      "network_id": 42,
+      "component_kind": 1,
+      "payload": "base64_blob...",
+      "tick": 1000
+    },
+    {
+      "network_id": 43,
+      "component_kind": 1,
+      "payload": "base64_blob...",
+      "tick": 1000
+    }
+  ]
+}
+```
 
 pub struct ComponentUpdate {
     pub network_id: NetworkId,
