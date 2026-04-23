@@ -3,6 +3,19 @@
 ### 🚀 Features
 
 - *(protocol)* Add `ReplicationBatch` variant to `NetworkEvent` and `WireEvent` to support grouping multiple entity updates into a single network payload.
+- *(protocol)* Add `WireEvent::into_network_event(client_id)` helper for safe conversion from over-the-wire events to local `NetworkEvent` context.
+- *(protocol)* Add `WorldState::extract_reliable_events` with default empty implementation.
+- *(protocol)* Add `WorldState::spawn_session_ship` to support authoritative possession flows.
+
+### 🚜 Refactor
+
+- Standardized `AuthService` trait to be used internally by the engine, decoupling it from gRPC-specific implementations.
+- Refactored `NetworkEvent` variants to strictly separate local events (`ClientConnected`, etc.) from wire-safe events.
+
+### 🐛 Bug Fixes
+
+- Resolved type inference issues in `MockEncoder` and `MockTransport` test doubles.
+- Stabilized replication batching by explicitly separating reliable and unreliable dispatch paths.
 
 ## [0.2.12] - 2026-04-22
 

@@ -406,6 +406,25 @@ impl Encoder for MockEncoder {
             NetworkEvent::ClearWorld { .. } => Ok(vec![b'C']),
             NetworkEvent::Fragment { .. } => Ok(vec![b'F']),
             NetworkEvent::GameEvent { .. } => Ok(vec![b'G']),
+            NetworkEvent::ReplicationBatch { events, .. } => {
+                if events.is_empty() {
+                    Ok(vec![b'B'])
+                } else {
+                    let mut result = Vec::new();
+                    for event in events {
+                        let mut buf = vec![0u8; 4096];
+                        let size = self.encode(event, &mut buf)?;
+                        if result.len() + size > crate::MAX_SAFE_PAYLOAD_SIZE {
+                            return Err(EncodeError::BufferOverflow {
+                                needed: result.len() + size,
+                                available: crate::MAX_SAFE_PAYLOAD_SIZE,
+                            });
+                        }
+                        result.extend_from_slice(&buf[..size]);
+                    }
+                    Ok(result)
+                }
+            }
             _ => Err(EncodeError::Io(std::io::Error::other(format!(
                 "MockEncoder: encoding not implemented for {event:?}"
             )))),

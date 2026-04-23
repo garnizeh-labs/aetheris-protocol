@@ -15,7 +15,7 @@
 In a 60Hz authoritative simulation, the network protocol is not just a data format — it is the single source of truth. **Aetheris Protocol** provides the high-performance, media-agnostic contracts that allow the client and server to synchronize massive world states with sub-millisecond overhead.
 
 > [!TIP]
-> 🚀 **Latest Milestone:** **VS-06 (World & Room Management) complete!** Unified the Authoritative Input Pipeline with the new Room-as-Entity architecture. Canonicalized `RoomDefinition`, `RoomBounds`, and `RoomMembership` components for spatial interest management.
+> 🚀 **Latest Milestone:** **Phase 1 Performance Stabilization (Replication) complete!** Resolved replication concurrency bottlenecks with a Rayon-parallelized encoding pipeline and stabilized the integration test suite for authoritative session flows.
 
 ### 📦 Workspace Components
 
