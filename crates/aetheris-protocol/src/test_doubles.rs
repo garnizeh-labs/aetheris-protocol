@@ -324,13 +324,13 @@ impl WorldState for MockWorldState {
     }
 
     fn state_hash(&self) -> u64 {
-        use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
+        use twox_hash::XxHash64;
 
-        let mut hasher = DefaultHasher::new();
+        let mut hasher = XxHash64::with_seed(0);
         self.next_id.hash(&mut hasher);
 
-        // Deterministic iteration for HashMap: Sort by NetworkId
+        // 1. Deterministic iteration for bimap: Sort by NetworkId
         let mut keys: Vec<&NetworkId> = self.forward_bimap.keys().collect();
         keys.sort_by_key(|nid| nid.0);
 
@@ -339,6 +339,22 @@ impl WorldState for MockWorldState {
             if let Some(lid) = self.forward_bimap.get(nid) {
                 lid.hash(&mut hasher);
             }
+        }
+
+        // 2. Incorporate pending_deltas (sorted by NetworkId then ComponentKind)
+        let mut deltas = self.pending_deltas.lock().unwrap().clone();
+        deltas.sort_by(|a, b| {
+            a.network_id
+                .0
+                .cmp(&b.network_id.0)
+                .then(a.component_kind.0.cmp(&b.component_kind.0))
+        });
+
+        for delta in deltas {
+            delta.network_id.hash(&mut hasher);
+            delta.component_kind.hash(&mut hasher);
+            delta.tick.hash(&mut hasher);
+            delta.payload.hash(&mut hasher);
         }
 
         hasher.finish()
