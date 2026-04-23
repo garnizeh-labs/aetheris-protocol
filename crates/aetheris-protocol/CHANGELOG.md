@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.18] - 2026-04-23
+
+### 🚀 Features
+
+- *(protocol)* Add state_hash to WorldState trait
+- *(protocol)* Make state_hash mandatory in WorldState trait
+- *(protocol)* Use stable XxHash64 and include pending_deltas in state_hash
 ## [0.2.17] - 2026-04-23
 ## [0.2.16] - 2026-04-23
 
