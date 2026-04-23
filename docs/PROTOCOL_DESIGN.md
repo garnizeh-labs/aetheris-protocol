@@ -1,8 +1,8 @@
 ---
-Version: 0.1.5 (Protocol v3)
+Version: 0.1.6 (Protocol v4)
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
-Last Updated: 2026-04-22
+Last Updated: 2026-04-23
 Authors: Team (Antigravity)
 Spec References: [PF-1000, M1020]
 Tier: 1
@@ -181,8 +181,20 @@ pub trait Encoder: Send + Sync {
     /// Deserializes raw bytes into a component update.
     fn decode(&self, buffer: &[u8]) -> Result<ComponentUpdate, EncodeError>;
 
-    /// Encodes a high-level NetworkEvent.
+    /// Encodes a high-level NetworkEvent into a byte vector.
     fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError>;
+
+    /// Encodes a high-level NetworkEvent into the provided buffer (zero-allocation).
+    /// Returns the number of bytes written.
+    ///
+    /// # Errors
+    /// Returns `EncodeError::BufferOverflow` if the buffer is too small,
+    /// or `EncodeError::Io` if serialization fails.
+    fn encode_event_into(
+        &self,
+        event: &NetworkEvent,
+        buffer: &mut [u8],
+    ) -> Result<usize, EncodeError>;
 
     /// Decodes a high-level NetworkEvent from a byte slice.
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError>;
