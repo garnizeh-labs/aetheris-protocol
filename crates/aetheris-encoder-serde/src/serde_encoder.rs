@@ -58,13 +58,15 @@ impl SerdeEncoder {
         let wire_event = Self::to_wire_event(event)?;
         let mut cursor = Cursor::new(&mut *buffer);
         rmp_serde::encode::write(&mut cursor, &wire_event).map_err(|e| {
-            if e.to_string().contains("unexpected end of file") {
+            let err_msg = e.to_string();
+            if err_msg.contains("unexpected end of file") || err_msg.contains("invalid value write")
+            {
                 EncodeError::BufferOverflow {
                     needed: 256, // Estimate
                     available: cursor.get_ref().len(),
                 }
             } else {
-                EncodeError::Io(std::io::Error::other(e.to_string()))
+                EncodeError::Io(std::io::Error::other(err_msg))
             }
         })?;
         usize::try_from(cursor.position()).map_err(|_| EncodeError::BufferOverflow {
