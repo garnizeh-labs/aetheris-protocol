@@ -216,12 +216,12 @@ pub trait WorldState: Send {
     fn get_client_room(&self, _client_id: ClientId) -> Option<NetworkId> {
         None
     }
+
     /// Returns a deterministic hash of the entire world state.
     ///
     /// Used for regression testing and golden file validation in VS-07 §3.3.
-    fn state_hash(&self) -> u64 {
-        0
-    }
+    /// Must include all replicated component state and entity existence.
+    fn state_hash(&self) -> u64;
 }
 
 /// Defines the serialization strategy for network payloads.

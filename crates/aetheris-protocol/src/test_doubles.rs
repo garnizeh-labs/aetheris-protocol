@@ -322,6 +322,27 @@ impl WorldState for MockWorldState {
         self.forward_bimap.clear();
         self.reverse_bimap.clear();
     }
+
+    fn state_hash(&self) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        self.next_id.hash(&mut hasher);
+
+        // Deterministic iteration for HashMap: Sort by NetworkId
+        let mut keys: Vec<&NetworkId> = self.forward_bimap.keys().collect();
+        keys.sort_by_key(|nid| nid.0);
+
+        for nid in keys {
+            nid.hash(&mut hasher);
+            if let Some(lid) = self.forward_bimap.get(nid) {
+                lid.hash(&mut hasher);
+            }
+        }
+
+        hasher.finish()
+    }
 }
 
 /// Mock encoder that writes a dummy header byte (`0xAE`) in front of the payload.
