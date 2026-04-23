@@ -410,10 +410,19 @@ impl Encoder for MockEncoder {
                 if events.is_empty() {
                     Ok(vec![b'B'])
                 } else {
-                    // For mock purposes, encode the first event to satisfy existing integration test assertions
-                    let mut buf = vec![0u8; 4096];
-                    let size = self.encode(&events[0], &mut buf)?;
-                    Ok(buf[..size].to_vec())
+                    let mut result = Vec::new();
+                    for event in events {
+                        let mut buf = vec![0u8; 4096];
+                        let size = self.encode(event, &mut buf)?;
+                        if result.len() + size > crate::MAX_SAFE_PAYLOAD_SIZE {
+                            return Err(EncodeError::BufferOverflow {
+                                needed: result.len() + size,
+                                available: crate::MAX_SAFE_PAYLOAD_SIZE,
+                            });
+                        }
+                        result.extend_from_slice(&buf[..size]);
+                    }
+                    Ok(result)
                 }
             }
             _ => Err(EncodeError::Io(std::io::Error::other(format!(
