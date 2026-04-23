@@ -22,6 +22,7 @@ tonic = { workspace = true, optional = true }
 tonic-prost = { workspace = true, optional = true }
 prost = { workspace = true, optional = true }
 serde_bytes = "0.11.19"
+twox-hash = "2.1.2"
 
 [build-dependencies]
 tonic-build = { workspace = true }
