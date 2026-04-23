@@ -76,6 +76,17 @@ pub struct ComponentUpdate {
     pub tick: u64,
 }
 
+impl From<ReplicationEvent> for ComponentUpdate {
+    fn from(event: ReplicationEvent) -> Self {
+        Self {
+            network_id: event.network_id,
+            component_kind: event.component_kind,
+            payload: event.payload,
+            tick: event.tick,
+        }
+    }
+}
+
 /// Events produced by `GameTransport::poll_events()`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum NetworkEvent {

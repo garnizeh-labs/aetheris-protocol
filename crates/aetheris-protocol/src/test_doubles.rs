@@ -406,6 +406,16 @@ impl Encoder for MockEncoder {
             NetworkEvent::ClearWorld { .. } => Ok(vec![b'C']),
             NetworkEvent::Fragment { .. } => Ok(vec![b'F']),
             NetworkEvent::GameEvent { .. } => Ok(vec![b'G']),
+            NetworkEvent::ReplicationBatch { events, .. } => {
+                if events.is_empty() {
+                    Ok(vec![b'B'])
+                } else {
+                    // For mock purposes, encode the first event to satisfy existing integration test assertions
+                    let mut buf = vec![0u8; 4096];
+                    let size = self.encode(&events[0], &mut buf)?;
+                    Ok(buf[..size].to_vec())
+                }
+            }
             _ => Err(EncodeError::Io(std::io::Error::other(format!(
                 "MockEncoder: encoding not implemented for {event:?}"
             )))),
