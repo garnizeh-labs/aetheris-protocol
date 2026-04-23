@@ -431,6 +431,22 @@ impl Encoder for MockEncoder {
         }
     }
 
+    fn encode_event_into(
+        &self,
+        event: &NetworkEvent,
+        buffer: &mut [u8],
+    ) -> Result<usize, EncodeError> {
+        let data = self.encode_event(event)?;
+        if data.len() > buffer.len() {
+            return Err(EncodeError::BufferOverflow {
+                needed: data.len(),
+                available: buffer.len(),
+            });
+        }
+        buffer[..data.len()].copy_from_slice(&data);
+        Ok(data.len())
+    }
+
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError> {
         if data.is_empty() {
             return Err(EncodeError::MalformedPayload {

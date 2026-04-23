@@ -4,7 +4,6 @@ use std::io::Cursor;
 
 use serde::{Deserialize, Serialize};
 
-use aetheris_protocol::MAX_SAFE_PAYLOAD_SIZE;
 use aetheris_protocol::error::EncodeError;
 use aetheris_protocol::events::{ComponentUpdate, NetworkEvent, ReplicationEvent, WireEvent};
 use aetheris_protocol::traits::Encoder;
@@ -42,7 +41,40 @@ impl SerdeEncoder {
         &self,
         event: &aetheris_protocol::events::NetworkEvent,
     ) -> Result<Vec<u8>, EncodeError> {
-        let wire_event = match event {
+        let wire_event = Self::to_wire_event(event)?;
+        rmp_serde::to_vec(&wire_event)
+            .map_err(|e| EncodeError::Io(std::io::Error::other(e.to_string())))
+    }
+
+    /// Encodes a `NetworkEvent` into the provided buffer.
+    ///
+    /// # Errors
+    /// Returns `EncodeError::BufferOverflow` if the buffer is too small.
+    pub fn encode_event_into(
+        &self,
+        event: &NetworkEvent,
+        buffer: &mut [u8],
+    ) -> Result<usize, EncodeError> {
+        let wire_event = Self::to_wire_event(event)?;
+        let mut cursor = Cursor::new(&mut *buffer);
+        rmp_serde::encode::write(&mut cursor, &wire_event).map_err(|e| {
+            if e.to_string().contains("unexpected end of file") {
+                EncodeError::BufferOverflow {
+                    needed: 256, // Estimate
+                    available: cursor.get_ref().len(),
+                }
+            } else {
+                EncodeError::Io(std::io::Error::other(e.to_string()))
+            }
+        })?;
+        usize::try_from(cursor.position()).map_err(|_| EncodeError::BufferOverflow {
+            needed: usize::MAX,
+            available: buffer.len(),
+        })
+    }
+
+    fn to_wire_event(event: &NetworkEvent) -> Result<WireEvent, EncodeError> {
+        Ok(match event {
             NetworkEvent::Ping { tick, .. } if event.is_wire() => WireEvent::Ping { tick: *tick },
             NetworkEvent::Pong { tick } => WireEvent::Pong { tick: *tick },
             NetworkEvent::Auth { session_token } => WireEvent::Auth {
@@ -70,33 +102,14 @@ impl SerdeEncoder {
             NetworkEvent::RequestSystemManifest { .. } => WireEvent::RequestSystemManifest,
             NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
             NetworkEvent::ReplicationBatch { events, .. } => {
-                let wire_event = WireEvent::ReplicationBatch(events.clone());
-                let encoded = rmp_serde::to_vec(&wire_event)
-                    .map_err(|e| EncodeError::Io(std::io::Error::other(e.to_string())))?;
-
-                if encoded.len() > MAX_SAFE_PAYLOAD_SIZE {
-                    return Err(EncodeError::BufferOverflow {
-                        needed: encoded.len(),
-                        available: MAX_SAFE_PAYLOAD_SIZE,
-                    });
-                }
-                return Ok(encoded);
+                WireEvent::ReplicationBatch(events.clone())
             }
-            NetworkEvent::ClientConnected(_)
-            | NetworkEvent::ClientDisconnected(_)
-            | NetworkEvent::UnreliableMessage { .. }
-            | NetworkEvent::ReliableMessage { .. }
-            | NetworkEvent::Ping { .. }
-            | NetworkEvent::SessionClosed(_)
-            | NetworkEvent::StreamReset(_)
-            | NetworkEvent::Disconnected(_) => {
+            _ => {
                 return Err(EncodeError::Io(std::io::Error::other(format!(
                     "Cannot encode local-only variant as wire event: {event:?}"
                 ))));
             }
-        };
-        rmp_serde::to_vec(&wire_event)
-            .map_err(|e| EncodeError::Io(std::io::Error::other(e.to_string())))
+        })
     }
 
     /// Decodes raw bytes into a `NetworkEvent`.
@@ -170,6 +183,14 @@ impl Encoder for SerdeEncoder {
 
     fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError> {
         self.encode_event(event)
+    }
+
+    fn encode_event_into(
+        &self,
+        event: &NetworkEvent,
+        buffer: &mut [u8],
+    ) -> Result<usize, EncodeError> {
+        self.encode_event_into(event, buffer)
     }
 
     fn decode_event(&self, data: &[u8]) -> Result<NetworkEvent, EncodeError> {

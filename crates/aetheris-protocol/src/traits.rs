@@ -268,6 +268,19 @@ pub trait Encoder: Send + Sync {
     /// Returns `EncodeError::Io` if serialization fails.
     fn encode_event(&self, event: &NetworkEvent) -> Result<Vec<u8>, EncodeError>;
 
+    /// Encodes a high-level `NetworkEvent` into the provided buffer.
+    ///
+    /// Returns the number of bytes written.
+    ///
+    /// # Errors
+    /// Returns `EncodeError::BufferOverflow` if the buffer is too small,
+    /// or `EncodeError::Io` if serialization fails.
+    fn encode_event_into(
+        &self,
+        event: &NetworkEvent,
+        buffer: &mut [u8],
+    ) -> Result<usize, EncodeError>;
+
     /// Decodes a high-level `NetworkEvent` from a byte slice.
     ///
     /// # Errors
