@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, hash_map};
 use std::time::Duration;
-use instant::Instant;
+use web_time::Instant;
 
 use crate::events::FragmentedEvent;
 use crate::types::ClientId;

@@ -23,7 +23,6 @@ name = "aetheris-protocol"
 version = "0.2.18"
 dependencies = [
  "async-trait",
- "instant",
  "prost",
  "serde",
  "serde_bytes",
@@ -35,6 +34,7 @@ dependencies = [
  "tonic-prost-build",
  "tracing",
  "twox-hash",
+ "web-time",
 ]
 
 [[package]]
@@ -398,18 +398,6 @@ dependencies = [
  "hashbrown 0.17.0",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "instant"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
-dependencies = [
- "cfg-if",
- "js-sys",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -1358,10 +1346,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "web-sys"
-version = "0.3.95"
+name = "web-time"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f2dfbb17949fa2088e5d39408c48368947b86f7834484e87b73de55bc14d97d"
+checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",

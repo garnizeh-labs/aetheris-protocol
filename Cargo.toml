@@ -34,4 +34,4 @@ tonic-prost = "0.14.3"
 prost = "0.14.1"
 tonic-build = "0.14.3"
 tonic-prost-build = "0.14.3"
-instant = { version = "0.1", features = ["wasm-bindgen"] }
+web-time = "1.1.0"
