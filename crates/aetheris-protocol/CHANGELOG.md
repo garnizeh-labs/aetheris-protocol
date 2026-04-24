@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.19] - 2026-04-24
+
+### 🚜 Refactor
+
+- Migrate timekeeping from instant to web-time crate
+
+### ⚙️ Miscellaneous Tasks
+
+- Vs-01 refinement - reassembler and dependency fixes
 ## [0.2.18] - 2026-04-23
 
 ### 🚀 Features
