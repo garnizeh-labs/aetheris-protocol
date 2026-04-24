@@ -182,6 +182,8 @@ impl InputCommand {
 pub struct MiningBeam {
     pub active: bool,
     pub target: Option<NetworkId>,
+    pub mining_range: f32,
+    pub base_mining_rate: u16,
 }
 
 /// Replicated state for a ship's cargo hold.
