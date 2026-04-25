@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.20] - 2026-04-25
+
+### 🐛 Bug Fixes
+
+- *(protocol)* Add serde(default) to MiningBeam fields for backward compatibility
+
+### ⚙️ Miscellaneous Tasks
+
+- *(protocol)* Update network types
 ## [0.2.19] - 2026-04-24
 
 ### 🚜 Refactor
