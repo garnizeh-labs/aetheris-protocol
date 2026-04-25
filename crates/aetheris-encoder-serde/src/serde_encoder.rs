@@ -471,7 +471,11 @@ mod tests {
                 GameEvent::AsteroidDepleted { network_id } => {
                     assert_eq!(network_id, NetworkId(123));
                 }
-                GameEvent::Possession { .. } | GameEvent::SystemManifest { .. } => {
+                GameEvent::Possession { .. }
+                | GameEvent::SystemManifest { .. }
+                | GameEvent::DamageEvent { .. }
+                | GameEvent::DeathEvent { .. }
+                | GameEvent::RespawnEvent { .. } => {
                     panic!("Unexpected event type in roundtrip test");
                 }
             }
