@@ -21,7 +21,11 @@ pub enum GameEvent {
         manifest: BTreeMap<String, String>,
     },
     /// Damage applied to an entity.
-    DamageEvent { target: NetworkId, amount: u16 },
+    DamageEvent {
+        source: NetworkId,
+        target: NetworkId,
+        amount: u16,
+    },
     /// An entity has been destroyed.
     DeathEvent { target: NetworkId },
     /// An entity has respawned.
