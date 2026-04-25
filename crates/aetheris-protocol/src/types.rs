@@ -182,7 +182,9 @@ impl InputCommand {
 pub struct MiningBeam {
     pub active: bool,
     pub target: Option<NetworkId>,
+    #[serde(default)]
     pub mining_range: f32,
+    #[serde(default)]
     pub base_mining_rate: u16,
 }
 
