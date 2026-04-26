@@ -121,9 +121,8 @@ pub const fn get_default_stats(entity_type: u16) -> (u16, u16) {
         ENTITY_TYPE_DREADNOUGHT => (1500, 500),
         ENTITY_TYPE_HAULER => (600, 200),
         ENTITY_TYPE_ASTEROID => (500, 0),
-        ENTITY_TYPE_CARGO_DROP => (1, 0),
         ENTITY_TYPE_TRAINING_DUMMY => (100, 50),
-        ENTITY_TYPE_PROJECTILE => (1, 0),
+        ENTITY_TYPE_CARGO_DROP | ENTITY_TYPE_PROJECTILE => (1, 0),
         _ => (100, 100),
     }
 }
