@@ -100,6 +100,33 @@ pub enum ShipClass {
     Hauler = 2,
 }
 
+/// Constant identifiers for entity types used in replication and rendering.
+pub const ENTITY_TYPE_INTERCEPTOR: u16 = 1;
+pub const ENTITY_TYPE_AI_INTERCEPTOR: u16 = 2;
+pub const ENTITY_TYPE_DREADNOUGHT: u16 = 3;
+pub const ENTITY_TYPE_HAULER: u16 = 4;
+pub const ENTITY_TYPE_ASTEROID: u16 = 5;
+pub const ENTITY_TYPE_CARGO_DROP: u16 = 6;
+pub const ENTITY_TYPE_TRAINING_DUMMY: u16 = 10;
+pub const ENTITY_TYPE_PROJECTILE: u16 = 20;
+
+/// Returns the default authoritative vitals (`max_hp`, `max_shield`) for a given entity type.
+///
+/// These values are the single source of truth for UI and early client-side prediction
+/// before authoritative `ShipStats` updates arrive.
+#[must_use]
+pub const fn get_default_stats(entity_type: u16) -> (u16, u16) {
+    match entity_type {
+        ENTITY_TYPE_INTERCEPTOR | ENTITY_TYPE_AI_INTERCEPTOR => (200, 100),
+        ENTITY_TYPE_DREADNOUGHT => (1500, 500),
+        ENTITY_TYPE_HAULER => (600, 200),
+        ENTITY_TYPE_ASTEROID => (500, 0),
+        ENTITY_TYPE_TRAINING_DUMMY => (100, 50),
+        ENTITY_TYPE_PROJECTILE => (1, 0),
+        _ => (100, 100),
+    }
+}
+
 /// Unique identifier for a weapon type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct WeaponId(pub u8);
@@ -585,5 +612,14 @@ mod tests {
         assert!(stats.max_shield > 0);
         assert!(stats.max_energy > 0);
         assert_eq!(stats.hp, stats.max_hp);
+    }
+
+    #[test]
+    fn test_get_default_stats() {
+        assert_eq!(get_default_stats(ENTITY_TYPE_INTERCEPTOR), (200, 100));
+        assert_eq!(get_default_stats(ENTITY_TYPE_DREADNOUGHT), (1500, 500));
+        assert_eq!(get_default_stats(ENTITY_TYPE_ASTEROID), (500, 0));
+        assert_eq!(get_default_stats(ENTITY_TYPE_TRAINING_DUMMY), (100, 50));
+        assert_eq!(get_default_stats(999), (100, 100)); // Default fallback
     }
 }
