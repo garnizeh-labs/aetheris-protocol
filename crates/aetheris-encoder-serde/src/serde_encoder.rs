@@ -496,7 +496,10 @@ mod tests {
                     ClientId(0),
                     "Wire decoding should default client_id to 0"
                 );
-                assert_eq!(decoded_event, game_event, "Roundtrip failed for {game_event:?}");
+                assert_eq!(
+                    decoded_event, game_event,
+                    "Roundtrip failed for {game_event:?}"
+                );
             } else {
                 panic!("Decoded event is not a GameEvent: {decoded:?}");
             }
