@@ -414,6 +414,29 @@ The `SuspicionScore` is a `u32` value assigned to every entity to track potentia
   - **Elevated**: 100–499
   - **Critical**: 500+
 
+## Authoritative Entity Definitions
+
+The protocol serves as the single source of truth for entity types and their default characteristics. This ensures that the engine (simulation) and client (UI/Rendering) remain synchronized without redundant hard-coding.
+
+### Entity Types
+
+Entity types are identified by a `u16` discriminant, typically stored in the `Transform` component's `entity_type` field.
+
+| Constant | ID | Description |
+|---|---|---|
+| `ENTITY_TYPE_INTERCEPTOR` | 1 | Standard player-controlled combat ship. |
+| `ENTITY_TYPE_AI_INTERCEPTOR` | 2 | NPC combat ship. |
+| `ENTITY_TYPE_DREADNOUGHT` | 3 | Capital-class heavy vessel. |
+| `ENTITY_TYPE_HAULER` | 4 | Heavy cargo vessel. |
+| `ENTITY_TYPE_ASTEROID` | 5 | Resource-bearing celestial body. |
+| `ENTITY_TYPE_CARGO_DROP` | 6 | Collectible resource container. |
+| `ENTITY_TYPE_TRAINING_DUMMY` | 10 | Target for combat practice. |
+| `ENTITY_TYPE_PROJECTILE` | 20 | Transient combat projectile. |
+
+### Default Vitals Lookup
+
+The protocol provides `get_default_stats(entity_type: u16) -> (u16, u16)` which returns the authoritative (`max_hp`, `max_shield`) for a given type. These values are used by the client for UI progress bars and by the engine for initial ship spawning.
+
 ## Cryptographic Integrity — Merkle Hash Chain
 
 Aetheris uses a per-entity hash chain to ensure the integrity of the event ledger.
