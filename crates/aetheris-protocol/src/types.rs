@@ -57,6 +57,24 @@ pub const CARGO_HOLD_KIND: ComponentKind = ComponentKind(1025);
 /// Replicated component for asteroid ore depletion tracking.
 pub const ASTEROID_KIND: ComponentKind = ComponentKind(1026);
 
+/// Replicated component for primary weapon state.
+pub const WEAPON_KIND: ComponentKind = ComponentKind(1027);
+
+/// Replicated component for shield pool state.
+pub const SHIELD_POOL_KIND: ComponentKind = ComponentKind(1028);
+
+/// Replicated component for hull pool state.
+pub const HULL_POOL_KIND: ComponentKind = ComponentKind(1029);
+
+/// Replicated component for cargo drop state.
+pub const CARGO_DROP_KIND: ComponentKind = ComponentKind(1030);
+
+/// Replicated component for projectile marker state.
+pub const PROJECTILE_MARKER_KIND: ComponentKind = ComponentKind(13);
+
+/// Action bitflag: fire primary weapon.
+pub const ACTION_FIRE_WEAPON: u32 = 1 << 2;
+
 /// Standard transform component used for replication (`ComponentKind` 1).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[repr(C)]
@@ -141,6 +159,9 @@ pub enum PlayerInputKind {
 /// Chosen to stay well within `MAX_SAFE_PAYLOAD_SIZE` (1200 bytes).
 pub const MAX_ACTIONS: usize = 128;
 
+/// Bitmask of all currently supported action flags.
+pub const ALLOWED_ACTIONS_MASK: u32 = ACTION_FIRE_WEAPON;
+
 /// Aggregated user input for a single simulation tick.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputCommand {
@@ -148,6 +169,9 @@ pub struct InputCommand {
     pub tick: u64,
     /// List of actions performed in this tick.
     pub actions: Vec<PlayerInputKind>,
+    /// Bitmask of actions for high-frequency binary inputs.
+    #[serde(default)]
+    pub actions_mask: u32,
     /// The tick of the last server state the client saw before sending this input.
     pub last_seen_input_tick: Option<u64>,
 }
@@ -168,10 +192,13 @@ impl InputCommand {
     /// Validates the command against protocol constraints.
     ///
     /// # Errors
-    /// Returns an error message if the command exceeds `MAX_ACTIONS`.
+    /// Returns an error message if the command exceeds `MAX_ACTIONS` or has unknown bits in `actions_mask`.
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.actions.len() > MAX_ACTIONS {
             return Err("Too many actions in InputCommand");
+        }
+        if (self.actions_mask & !ALLOWED_ACTIONS_MASK) != 0 {
+            return Err("Unknown bits in actions_mask");
         }
         Ok(())
     }
@@ -195,11 +222,37 @@ pub struct CargoHold {
     pub capacity: u16,
 }
 
-/// Replicated state for an asteroid's resource depletion.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Asteroid {
     pub ore_remaining: u16,
     pub total_capacity: u16,
+}
+
+/// Replicated state for a ship's primary weapon.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct Weapon {
+    pub cooldown_ticks: u16,
+    pub last_fired_tick: u64,
+}
+
+/// Replicated state for a ship's shield pool.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct ShieldPool {
+    pub current: u16,
+    pub max: u16,
+}
+
+/// Replicated state for a ship's hull pool.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct HullPool {
+    pub current: u16,
+    pub max: u16,
+}
+
+/// Replicated state for a cargo drop entity.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct CargoDrop {
+    pub quantity: u16,
 }
 
 /// Basic vitals for any ship entity.
@@ -499,6 +552,7 @@ mod tests {
         let cmd = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 2.0, y: -5.0 }],
+            actions_mask: 0,
             last_seen_input_tick: None,
         };
         let clamped = cmd.clamped();
@@ -512,6 +566,7 @@ mod tests {
         let valid = InputCommand {
             tick: 1,
             actions: vec![PlayerInputKind::Move { x: 0.5, y: -0.2 }],
+            actions_mask: 0,
             last_seen_input_tick: None,
         };
         let clamped = valid.clamped();

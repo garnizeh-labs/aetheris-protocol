@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// A reliable discrete game event (Phase 1 / VS-02).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum GameEvent {
     /// An asteroid was completely depleted of its ore.
     AsteroidDepleted {
@@ -19,6 +19,23 @@ pub enum GameEvent {
     SystemManifest {
         /// The collection of metadata key-value pairs.
         manifest: BTreeMap<String, String>,
+    },
+    /// Damage applied to an entity.
+    DamageEvent {
+        source: NetworkId,
+        target: NetworkId,
+        amount: u16,
+    },
+    /// An entity has been destroyed.
+    DeathEvent { target: NetworkId },
+    /// An entity has respawned.
+    RespawnEvent { target: NetworkId, x: f32, y: f32 },
+    /// A cargo drop was collected by a ship.
+    CargoCollected {
+        /// The network ID of the cargo drop that was collected.
+        network_id: NetworkId,
+        /// The amount of ore collected.
+        amount: u16,
     },
 }
 
