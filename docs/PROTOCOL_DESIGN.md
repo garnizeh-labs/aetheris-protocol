@@ -1,8 +1,8 @@
 ---
-Version: 0.1.6 (Protocol v4)
+Version: 0.1.7 (Protocol v4)
 Status: Phase 1 — Stable / Phase 2 — Specified
 Phase: All
-Last Updated: 2026-04-23
+Last Updated: 2026-04-26
 Authors: Team (Antigravity)
 Spec References: [PF-1000, M1020]
 Tier: 1
@@ -261,6 +261,18 @@ pub enum GameEvent {
     ///        `"clients_active"` (admin-gated).
     /// Values are always UTF-8 strings; callers must parse to the target type.
     SystemManifest { manifest: BTreeMap<String, String> },
+
+    /// Damage applied to an entity.
+    DamageEvent { source: NetworkId, target: NetworkId, amount: u16 },
+
+    /// An entity has been destroyed.
+    DeathEvent { target: NetworkId },
+
+    /// An entity has respawned.
+    RespawnEvent { target: NetworkId, x: f32, y: f32 },
+
+    /// A cargo drop was collected by a ship.
+    CargoCollected { network_id: NetworkId, amount: u16 },
 }
 ```
 

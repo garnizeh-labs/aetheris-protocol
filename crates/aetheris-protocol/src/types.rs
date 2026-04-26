@@ -159,6 +159,9 @@ pub enum PlayerInputKind {
 /// Chosen to stay well within `MAX_SAFE_PAYLOAD_SIZE` (1200 bytes).
 pub const MAX_ACTIONS: usize = 128;
 
+/// Bitmask of all currently supported action flags.
+pub const ALLOWED_ACTIONS_MASK: u32 = ACTION_FIRE_WEAPON;
+
 /// Aggregated user input for a single simulation tick.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputCommand {
@@ -189,10 +192,13 @@ impl InputCommand {
     /// Validates the command against protocol constraints.
     ///
     /// # Errors
-    /// Returns an error message if the command exceeds `MAX_ACTIONS`.
+    /// Returns an error message if the command exceeds `MAX_ACTIONS` or has unknown bits in `actions_mask`.
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.actions.len() > MAX_ACTIONS {
             return Err("Too many actions in InputCommand");
+        }
+        if (self.actions_mask & !ALLOWED_ACTIONS_MASK) != 0 {
+            return Err("Unknown bits in actions_mask");
         }
         Ok(())
     }

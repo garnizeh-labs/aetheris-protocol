@@ -444,44 +444,62 @@ mod tests {
     fn test_game_event_roundtrip() {
         use aetheris_protocol::events::GameEvent;
         use aetheris_protocol::types::NetworkId;
+        use std::collections::BTreeMap;
 
         let encoder = SerdeEncoder::new();
-        let game_event = GameEvent::AsteroidDepleted {
-            network_id: NetworkId(123),
-        };
-        let event = NetworkEvent::GameEvent {
-            client_id: ClientId(1), // Should be masked to 0 on wire and restored on server poll
-            event: game_event.clone(),
-        };
 
-        let output = encoder.encode_event(&event).unwrap();
-        let decoded = encoder.decode_event(&output).unwrap();
+        let test_events = vec![
+            GameEvent::AsteroidDepleted {
+                network_id: NetworkId(123),
+            },
+            GameEvent::Possession {
+                network_id: NetworkId(456),
+            },
+            GameEvent::SystemManifest {
+                manifest: BTreeMap::new(),
+            },
+            GameEvent::DamageEvent {
+                source: NetworkId(1),
+                target: NetworkId(2),
+                amount: 10,
+            },
+            GameEvent::DeathEvent {
+                target: NetworkId(3),
+            },
+            GameEvent::RespawnEvent {
+                target: NetworkId(4),
+                x: 10.5,
+                y: 20.2,
+            },
+            GameEvent::CargoCollected {
+                network_id: NetworkId(5),
+                amount: 50,
+            },
+        ];
 
-        if let NetworkEvent::GameEvent {
-            client_id,
-            event: decoded_event,
-        } = decoded
-        {
-            assert_eq!(
+        for game_event in test_events {
+            let event = NetworkEvent::GameEvent {
+                client_id: ClientId(1),
+                event: game_event.clone(),
+            };
+
+            let output = encoder.encode_event(&event).unwrap();
+            let decoded = encoder.decode_event(&output).unwrap();
+
+            if let NetworkEvent::GameEvent {
                 client_id,
-                ClientId(0),
-                "Wire decoding should default client_id to 0"
-            );
-            match decoded_event {
-                GameEvent::AsteroidDepleted { network_id } => {
-                    assert_eq!(network_id, NetworkId(123));
-                }
-                GameEvent::Possession { .. }
-                | GameEvent::SystemManifest { .. }
-                | GameEvent::DamageEvent { .. }
-                | GameEvent::DeathEvent { .. }
-                | GameEvent::RespawnEvent { .. }
-                | GameEvent::CargoCollected { .. } => {
-                    panic!("Unexpected event type in roundtrip test");
-                }
+                event: decoded_event,
+            } = decoded
+            {
+                assert_eq!(
+                    client_id,
+                    ClientId(0),
+                    "Wire decoding should default client_id to 0"
+                );
+                assert_eq!(decoded_event, game_event, "Roundtrip failed for {game_event:?}");
+            } else {
+                panic!("Decoded event is not a GameEvent: {decoded:?}");
             }
-        } else {
-            panic!("Decoded event is not a GameEvent: {decoded:?}");
         }
     }
 }
