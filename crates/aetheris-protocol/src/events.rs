@@ -30,6 +30,13 @@ pub enum GameEvent {
     DeathEvent { target: NetworkId },
     /// An entity has respawned.
     RespawnEvent { target: NetworkId, x: f32, y: f32 },
+    /// A cargo drop was collected by a ship.
+    CargoCollected {
+        /// The network ID of the cargo drop that was collected.
+        network_id: NetworkId,
+        /// The amount of ore collected.
+        amount: u16,
+    },
 }
 
 impl GameEvent {

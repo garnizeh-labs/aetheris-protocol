@@ -475,7 +475,8 @@ mod tests {
                 | GameEvent::SystemManifest { .. }
                 | GameEvent::DamageEvent { .. }
                 | GameEvent::DeathEvent { .. }
-                | GameEvent::RespawnEvent { .. } => {
+                | GameEvent::RespawnEvent { .. }
+                | GameEvent::CargoCollected { .. } => {
                     panic!("Unexpected event type in roundtrip test");
                 }
             }

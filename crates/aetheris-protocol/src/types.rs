@@ -69,6 +69,9 @@ pub const HULL_POOL_KIND: ComponentKind = ComponentKind(1029);
 /// Replicated component for cargo drop state.
 pub const CARGO_DROP_KIND: ComponentKind = ComponentKind(1030);
 
+/// Replicated component for projectile marker state.
+pub const PROJECTILE_MARKER_KIND: ComponentKind = ComponentKind(13);
+
 /// Action bitflag: fire primary weapon.
 pub const ACTION_FIRE_WEAPON: u32 = 1 << 2;
 
