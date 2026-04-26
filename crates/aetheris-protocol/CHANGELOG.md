@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.21] - 2026-04-26
+
+### 🚀 Features
+
+- *(protocol)* Add combat loop components and events (VS-03)
+- *(vs-01)* Finalize combat loop stabilization and determinism hardening
+- *(protocol)* Add CargoCollected event and projectile marker kind
+- Implement bitmask validation for input commands and add support for new game events
 ## [0.2.20] - 2026-04-25
 
 ### 🐛 Bug Fixes
