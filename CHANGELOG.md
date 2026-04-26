@@ -1,3 +1,10 @@
+
+## [Unreleased]
+
+### 🚀 Features
+
+- Centralized entity type IDs and default vitals (HP/Shield) in the protocol to ensure consistency across engine and client.
+
 ## [0.2.13] - 2026-04-22
 
 ### 🚀 Features
