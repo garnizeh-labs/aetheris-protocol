@@ -121,6 +121,7 @@ pub const fn get_default_stats(entity_type: u16) -> (u16, u16) {
         ENTITY_TYPE_DREADNOUGHT => (1500, 500),
         ENTITY_TYPE_HAULER => (600, 200),
         ENTITY_TYPE_ASTEROID => (500, 0),
+        ENTITY_TYPE_CARGO_DROP => (1, 0),
         ENTITY_TYPE_TRAINING_DUMMY => (100, 50),
         ENTITY_TYPE_PROJECTILE => (1, 0),
         _ => (100, 100),
@@ -617,9 +618,13 @@ mod tests {
     #[test]
     fn test_get_default_stats() {
         assert_eq!(get_default_stats(ENTITY_TYPE_INTERCEPTOR), (200, 100));
+        assert_eq!(get_default_stats(ENTITY_TYPE_AI_INTERCEPTOR), (200, 100));
         assert_eq!(get_default_stats(ENTITY_TYPE_DREADNOUGHT), (1500, 500));
+        assert_eq!(get_default_stats(ENTITY_TYPE_HAULER), (600, 200));
         assert_eq!(get_default_stats(ENTITY_TYPE_ASTEROID), (500, 0));
+        assert_eq!(get_default_stats(ENTITY_TYPE_CARGO_DROP), (1, 0));
         assert_eq!(get_default_stats(ENTITY_TYPE_TRAINING_DUMMY), (100, 50));
+        assert_eq!(get_default_stats(ENTITY_TYPE_PROJECTILE), (1, 0));
         assert_eq!(get_default_stats(999), (100, 100)); // Default fallback
     }
 }
