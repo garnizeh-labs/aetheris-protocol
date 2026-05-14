@@ -39,41 +39,41 @@ pub struct ComponentKind(pub u16);
 /// Tagged as Transient/Inbound-Only.
 pub const INPUT_COMMAND_KIND: ComponentKind = ComponentKind(128);
 
-/// Replicated component for Room Definition.
-pub const ROOM_DEFINITION_KIND: ComponentKind = ComponentKind(129);
+/// Replicated component for Workspace Definition.
+pub const WORKSPACE_DEFINITION_KIND: ComponentKind = ComponentKind(129);
 
-/// Replicated component for Room Bounds.
-pub const ROOM_BOUNDS_KIND: ComponentKind = ComponentKind(130);
+/// Replicated component for Workspace Bounds.
+pub const WORKSPACE_BOUNDS_KIND: ComponentKind = ComponentKind(130);
 
-/// Replicated component for Room Membership.
-pub const ROOM_MEMBERSHIP_KIND: ComponentKind = ComponentKind(131);
+/// Replicated component for Workspace Membership.
+pub const WORKSPACE_MEMBERSHIP_KIND: ComponentKind = ComponentKind(131);
 
-/// Replicated component for the mining laser beam state.
-pub const MINING_BEAM_KIND: ComponentKind = ComponentKind(1024);
+/// Replicated component for the extraction beam state.
+pub const EXTRACTION_BEAM_KIND: ComponentKind = ComponentKind(1024);
 
-/// Replicated component for ship cargo state (replicated to owner).
-pub const CARGO_HOLD_KIND: ComponentKind = ComponentKind(1025);
+/// Replicated component for agent data store state (replicated to owner).
+pub const DATA_STORE_KIND: ComponentKind = ComponentKind(1025);
 
-/// Replicated component for asteroid ore depletion tracking.
-pub const ASTEROID_KIND: ComponentKind = ComponentKind(1026);
+/// Replicated component for resource payload depletion tracking.
+pub const RESOURCE_KIND: ComponentKind = ComponentKind(1026);
 
-/// Replicated component for primary weapon state.
-pub const WEAPON_KIND: ComponentKind = ComponentKind(1027);
+/// Replicated component for primary tool state.
+pub const TOOL_KIND: ComponentKind = ComponentKind(1027);
 
-/// Replicated component for shield pool state.
-pub const SHIELD_POOL_KIND: ComponentKind = ComponentKind(1028);
+/// Replicated component for priority pool state.
+pub const PRIORITY_POOL_KIND: ComponentKind = ComponentKind(1028);
 
-/// Replicated component for hull pool state.
-pub const HULL_POOL_KIND: ComponentKind = ComponentKind(1029);
+/// Replicated component for integrity pool state.
+pub const INTEGRITY_POOL_KIND: ComponentKind = ComponentKind(1029);
 
-/// Replicated component for cargo drop state.
-pub const CARGO_DROP_KIND: ComponentKind = ComponentKind(1030);
+/// Replicated component for data drop state.
+pub const DATA_DROP_KIND: ComponentKind = ComponentKind(1030);
 
-/// Replicated component for projectile marker state.
-pub const PROJECTILE_MARKER_KIND: ComponentKind = ComponentKind(13);
+/// Replicated component for beam marker state.
+pub const BEAM_MARKER_KIND: ComponentKind = ComponentKind(13);
 
-/// Action bitflag: fire primary weapon.
-pub const ACTION_FIRE_WEAPON: u32 = 1 << 2;
+/// Action bitflag: use primary tool.
+pub const ACTION_USE_TOOL: u32 = 1 << 2;
 
 /// Standard transform component used for replication (`ComponentKind` 1).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -91,63 +91,63 @@ pub struct Transform {
     pub entity_type: u16,
 }
 
-/// Ship classification for rendering and stat selection.
+/// Agent classification for rendering and property selection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum ShipClass {
-    Interceptor = 0,
-    Dreadnought = 1,
-    Hauler = 2,
+pub enum AgentKind {
+    Standard = 0,
+    Heavy = 1,
+    Carrier = 2,
 }
 
 /// Constant identifiers for entity types used in replication and rendering.
-pub const ENTITY_TYPE_INTERCEPTOR: u16 = 1;
-pub const ENTITY_TYPE_AI_INTERCEPTOR: u16 = 2;
-pub const ENTITY_TYPE_DREADNOUGHT: u16 = 3;
-pub const ENTITY_TYPE_HAULER: u16 = 4;
-pub const ENTITY_TYPE_ASTEROID: u16 = 5;
-pub const ENTITY_TYPE_CARGO_DROP: u16 = 6;
-pub const ENTITY_TYPE_TRAINING_DUMMY: u16 = 10;
-pub const ENTITY_TYPE_PROJECTILE: u16 = 20;
+pub const ENTITY_TYPE_AGENT: u16 = 1;
+pub const ENTITY_TYPE_AI_AGENT: u16 = 2;
+pub const ENTITY_TYPE_HEAVY_AGENT: u16 = 3;
+pub const ENTITY_TYPE_CARRIER_AGENT: u16 = 4;
+pub const ENTITY_TYPE_RESOURCE: u16 = 5;
+pub const ENTITY_TYPE_DATA_DROP: u16 = 6;
+pub const ENTITY_TYPE_TRAINING_TARGET: u16 = 10;
+pub const ENTITY_TYPE_BEAM: u16 = 20;
 
-/// Returns the default authoritative vitals (`max_hp`, `max_shield`) for a given entity type.
+/// Returns the default authoritative vitals (`max_integrity`, `max_priority`) for a given entity type.
 ///
 /// These values are the single source of truth for UI and early client-side prediction
-/// before authoritative `ShipStats` updates arrive.
+/// before authoritative `AgentProperties` updates arrive.
 #[must_use]
-pub const fn get_default_stats(entity_type: u16) -> (u16, u16) {
+pub const fn get_default_properties(entity_type: u16) -> (u16, u16) {
     match entity_type {
-        ENTITY_TYPE_INTERCEPTOR | ENTITY_TYPE_AI_INTERCEPTOR => (200, 100),
-        ENTITY_TYPE_DREADNOUGHT => (1500, 500),
-        ENTITY_TYPE_HAULER => (600, 200),
-        ENTITY_TYPE_ASTEROID => (500, 0),
-        ENTITY_TYPE_TRAINING_DUMMY => (100, 50),
-        ENTITY_TYPE_CARGO_DROP | ENTITY_TYPE_PROJECTILE => (1, 0),
+        ENTITY_TYPE_AGENT | ENTITY_TYPE_AI_AGENT => (200, 100),
+        ENTITY_TYPE_HEAVY_AGENT => (1500, 500),
+        ENTITY_TYPE_CARRIER_AGENT => (600, 200),
+        ENTITY_TYPE_RESOURCE => (500, 0),
+        ENTITY_TYPE_TRAINING_TARGET => (100, 50),
+        ENTITY_TYPE_DATA_DROP | ENTITY_TYPE_BEAM => (1, 0),
         _ => (100, 100),
     }
 }
 
-/// Unique identifier for a weapon type.
+/// Unique identifier for a tool type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct WeaponId(pub u8);
+pub struct ToolId(pub u8);
 
-/// A globally unique sector/room identifier.
+/// A globally unique zone identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct SectorId(pub u64);
+pub struct ZoneId(pub u64);
 
-/// Material types extracted from asteroids.
+/// Payload types extracted from resources.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum OreType {
-    RawOre = 0,
+pub enum PayloadType {
+    RawPayload = 0,
 }
 
-/// Projectile delivery classification.
+/// Beam delivery classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum ProjectileType {
-    PulseLaser = 0,
-    SeekerMissile = 1,
+pub enum InteractionBeamType {
+    PulseBeam = 0,
+    TrackingBeam = 1,
 }
 
 /// NPC Drone behavior state Machine.
@@ -176,10 +176,17 @@ pub enum RespawnLocation {
 pub enum PlayerInputKind {
     /// Directional thrust/movement.
     Move { x: f32, y: f32 },
-    /// Toggle mining beam on a specific target.
-    ToggleMining { target: NetworkId },
-    /// Fire primary weapon (for VS-03).
-    FirePrimary,
+    /// Toggle extraction beam on a specific target.
+    ToggleExtraction { target: NetworkId },
+    /// Fire primary tool (for VS-03).
+    FireTool,
+    /// Cursor movement for external compositors or UI integration.
+    CursorMove {
+        /// Normalized X position (0.0 to 1.0)
+        x: f32,
+        /// Normalized Y position (0.0 to 1.0)
+        y: f32,
+    },
 }
 
 /// Maximum allowed actions in a single `InputCommand` to prevent payload `DoS`.
@@ -187,7 +194,7 @@ pub enum PlayerInputKind {
 pub const MAX_ACTIONS: usize = 128;
 
 /// Bitmask of all currently supported action flags.
-pub const ALLOWED_ACTIONS_MASK: u32 = ACTION_FIRE_WEAPON;
+pub const ALLOWED_ACTIONS_MASK: u32 = ACTION_USE_TOOL;
 
 /// Aggregated user input for a single simulation tick.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,6 +219,10 @@ impl InputCommand {
                 *x = x.clamp(-1.0, 1.0);
                 *y = y.clamp(-1.0, 1.0);
             }
+            if let PlayerInputKind::CursorMove { x, y } = action {
+                *x = x.clamp(0.0, 1.0);
+                *y = y.clamp(0.0, 1.0);
+            }
         }
         self
     }
@@ -231,132 +242,132 @@ impl InputCommand {
     }
 }
 
-/// Replicated state for a ship's mining beam.
+/// Replicated state for an agent's extraction beam.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct MiningBeam {
+pub struct ExtractionBeam {
     pub active: bool,
     pub target: Option<NetworkId>,
     #[serde(default)]
-    pub mining_range: f32,
+    pub extraction_range: f32,
     #[serde(default)]
-    pub base_mining_rate: u16,
+    pub base_extraction_rate: u16,
 }
 
-/// Replicated state for a ship's cargo hold.
+/// Replicated state for an agent's data store.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct CargoHold {
-    pub ore_count: u16,
+pub struct DataStore {
+    pub payload_count: u16,
     pub capacity: u16,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct Asteroid {
-    pub ore_remaining: u16,
+pub struct Resource {
+    pub payload_remaining: u16,
     pub total_capacity: u16,
 }
 
-/// Replicated state for a ship's primary weapon.
+/// Replicated state for an agent's primary tool.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct Weapon {
+pub struct Tool {
     pub cooldown_ticks: u16,
     pub last_fired_tick: u64,
 }
 
-/// Replicated state for a ship's shield pool.
+/// Replicated state for an agent's priority pool.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct ShieldPool {
+pub struct PriorityPool {
     pub current: u16,
     pub max: u16,
 }
 
-/// Replicated state for a ship's hull pool.
+/// Replicated state for an agent's integrity pool.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct HullPool {
+pub struct IntegrityPool {
     pub current: u16,
     pub max: u16,
 }
 
-/// Replicated state for a cargo drop entity.
+/// Replicated state for a data drop entity.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct CargoDrop {
-    pub quantity: u16,
+pub struct DataDrop {
+    pub amount: u16,
 }
 
-/// Basic vitals for any ship entity.
+/// Basic properties for any agent entity.
 ///
-/// NOTE: Zero values in maxima (`max_hp`, `max_shield`, `max_energy`) represent an uninitialized
+/// NOTE: Zero values in maxima (`max_integrity`, `max_priority`, `max_energy`) represent an uninitialized
 /// or dead state. Logic that performs divisions or percentage calculations must verify
 /// non-zero maxima.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct ShipStats {
-    pub hp: u16,
-    pub max_hp: u16,
-    pub shield: u16,
-    pub max_shield: u16,
+pub struct AgentProperties {
+    pub integrity: u16,
+    pub max_integrity: u16,
+    pub priority: u16,
+    pub max_priority: u16,
     pub energy: u16,
     pub max_energy: u16,
-    pub shield_regen_per_s: u16,
+    pub priority_regen_per_s: u16,
     pub energy_regen_per_s: u16,
 }
 
-impl Default for ShipStats {
-    /// Returns a baseline valid state (100 HP/Shield/Energy).
+impl Default for AgentProperties {
+    /// Returns a baseline valid state (100 Integrity/Priority/Energy).
     fn default() -> Self {
         Self {
-            hp: 100,
-            max_hp: 100,
-            shield: 100,
-            max_shield: 100,
+            integrity: 100,
+            max_integrity: 100,
+            priority: 100,
+            max_priority: 100,
             energy: 100,
             max_energy: 100,
-            shield_regen_per_s: 0,
+            priority_regen_per_s: 0,
             energy_regen_per_s: 0,
         }
     }
 }
 
-/// Maximum byte length (UTF-8) for [`RoomName`] and [`PermissionString`].
+/// Maximum byte length (UTF-8) for [`WorkspaceName`] and [`PermissionString`].
 ///
 /// Chosen well below [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE)
 /// to leave ample room for the surrounding struct framing in the wire format.
-pub const MAX_ROOM_STRING_BYTES: usize = 64;
+pub const MAX_WORKSPACE_STRING_BYTES: usize = 64;
 
-/// Error returned when a [`RoomName`] or [`PermissionString`] exceeds the
+/// Error returned when a [`WorkspaceName`] or [`PermissionString`] exceeds the
 /// allowed byte length.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("string too long: {len} bytes exceeds the maximum of {max} bytes")]
-pub struct RoomStringError {
+pub struct WorkspaceStringError {
     /// Actual byte length of the rejected string.
     pub len: usize,
-    /// Maximum allowed byte length ([`MAX_ROOM_STRING_BYTES`]).
+    /// Maximum allowed byte length ([`MAX_WORKSPACE_STRING_BYTES`]).
     pub max: usize,
 }
 
-/// A validated room name.
+/// A validated workspace name.
 ///
-/// Guaranteed not to exceed [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8).
-/// The limit is enforced at construction time via [`RoomName::new`] and at
+/// Guaranteed not to exceed [`MAX_WORKSPACE_STRING_BYTES`] bytes (UTF-8).
+/// The limit is enforced at construction time via [`WorkspaceName::new`] and at
 /// Serde decode time, so a value held in this type can never produce a payload
 /// that exceeds [`MAX_SAFE_PAYLOAD_SIZE`](crate::MAX_SAFE_PAYLOAD_SIZE).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct RoomName(String);
+pub struct WorkspaceName(String);
 
-impl RoomName {
-    /// Creates a `RoomName`, returning [`RoomStringError`] if `s` exceeds
-    /// [`MAX_ROOM_STRING_BYTES`] bytes.
+impl WorkspaceName {
+    /// Creates a `WorkspaceName`, returning [`WorkspaceStringError`] if `s` exceeds
+    /// [`MAX_WORKSPACE_STRING_BYTES`] bytes.
     ///
     /// # Errors
     ///
-    /// Returns [`RoomStringError`] if the byte length of `s` exceeds
-    /// [`MAX_ROOM_STRING_BYTES`].
-    #[must_use = "the validated RoomName must be used"]
-    pub fn new(s: impl Into<String>) -> Result<Self, RoomStringError> {
+    /// Returns [`WorkspaceStringError`] if the byte length of `s` exceeds
+    /// [`MAX_WORKSPACE_STRING_BYTES`].
+    #[must_use = "the validated WorkspaceName must be used"]
+    pub fn new(s: impl Into<String>) -> Result<Self, WorkspaceStringError> {
         let s = s.into();
-        if s.len() > MAX_ROOM_STRING_BYTES {
-            return Err(RoomStringError {
+        if s.len() > MAX_WORKSPACE_STRING_BYTES {
+            return Err(WorkspaceStringError {
                 len: s.len(),
-                max: MAX_ROOM_STRING_BYTES,
+                max: MAX_WORKSPACE_STRING_BYTES,
             });
         }
         Ok(Self(s))
@@ -369,20 +380,20 @@ impl RoomName {
     }
 }
 
-impl TryFrom<String> for RoomName {
-    type Error = RoomStringError;
+impl TryFrom<String> for WorkspaceName {
+    type Error = WorkspaceStringError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         Self::new(s)
     }
 }
 
-impl From<RoomName> for String {
-    fn from(n: RoomName) -> String {
+impl From<WorkspaceName> for String {
+    fn from(n: WorkspaceName) -> String {
         n.0
     }
 }
 
-impl std::fmt::Display for RoomName {
+impl std::fmt::Display for WorkspaceName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
     }
@@ -390,8 +401,8 @@ impl std::fmt::Display for RoomName {
 
 /// A validated access-control permission token.
 ///
-/// Guaranteed not to exceed [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8).
-/// Used by [`RoomAccessPolicy::Permission`].
+/// Guaranteed not to exceed [`MAX_WORKSPACE_STRING_BYTES`] bytes (UTF-8).
+/// Used by [`WorkspaceAccessPolicy::Permission`].
 /// The limit is enforced at construction time via [`PermissionString::new`] and
 /// at Serde decode time.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -399,20 +410,20 @@ impl std::fmt::Display for RoomName {
 pub struct PermissionString(String);
 
 impl PermissionString {
-    /// Creates a `PermissionString`, returning [`RoomStringError`] if `s`
-    /// exceeds [`MAX_ROOM_STRING_BYTES`] bytes.
+    /// Creates a `PermissionString`, returning [`WorkspaceStringError`] if `s`
+    /// exceeds [`MAX_WORKSPACE_STRING_BYTES`] bytes.
     ///
     /// # Errors
     ///
-    /// Returns [`RoomStringError`] if the byte length of `s` exceeds
-    /// [`MAX_ROOM_STRING_BYTES`].
+    /// Returns [`WorkspaceStringError`] if the byte length of `s` exceeds
+    /// [`MAX_WORKSPACE_STRING_BYTES`].
     #[must_use = "the validated PermissionString must be used"]
-    pub fn new(s: impl Into<String>) -> Result<Self, RoomStringError> {
+    pub fn new(s: impl Into<String>) -> Result<Self, WorkspaceStringError> {
         let s = s.into();
-        if s.len() > MAX_ROOM_STRING_BYTES {
-            return Err(RoomStringError {
+        if s.len() > MAX_WORKSPACE_STRING_BYTES {
+            return Err(WorkspaceStringError {
                 len: s.len(),
-                max: MAX_ROOM_STRING_BYTES,
+                max: MAX_WORKSPACE_STRING_BYTES,
             });
         }
         Ok(Self(s))
@@ -426,7 +437,7 @@ impl PermissionString {
 }
 
 impl TryFrom<String> for PermissionString {
-    type Error = RoomStringError;
+    type Error = WorkspaceStringError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         Self::new(s)
     }
@@ -444,15 +455,15 @@ impl std::fmt::Display for PermissionString {
     }
 }
 
-/// Access control policy for the room.
+/// Access control policy for the workspace.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum RoomAccessPolicy {
+pub enum WorkspaceAccessPolicy {
     /// Anyone can enter.
     Open,
     /// Only clients holding the specified [`PermissionString`] token can enter.
     ///
     /// The token is replicated verbatim in the wire format and is guaranteed
-    /// not to exceed [`MAX_ROOM_STRING_BYTES`] bytes.
+    /// not to exceed [`MAX_WORKSPACE_STRING_BYTES`] bytes.
     Permission(PermissionString),
     /// Only explicitly invited clients can enter.
     InviteOnly,
@@ -460,31 +471,31 @@ pub enum RoomAccessPolicy {
     Locked,
 }
 
-/// Defines a spatial region as a Room.
+/// Defines a spatial region as a Workspace.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RoomDefinition {
-    /// Human-readable room identifier.
+pub struct WorkspaceDefinition {
+    /// Human-readable workspace identifier.
     ///
     /// Replicated verbatim in the wire format. Guaranteed not to exceed
-    /// [`MAX_ROOM_STRING_BYTES`] bytes (UTF-8) by the [`RoomName`] type.
-    pub name: RoomName,
+    /// [`MAX_WORKSPACE_STRING_BYTES`] bytes (UTF-8) by the [`WorkspaceName`] type.
+    pub name: WorkspaceName,
     pub capacity: u32,
-    pub access: RoomAccessPolicy,
+    pub access: WorkspaceAccessPolicy,
     pub is_template: bool,
 }
 
-/// Spatial bounds of the room in world coordinates.
+/// Spatial bounds of the workspace in world coordinates.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct RoomBounds {
+pub struct WorkspaceBounds {
     pub min_x: f32,
     pub min_y: f32,
     pub max_x: f32,
     pub max_y: f32,
 }
 
-/// Defines which Room an entity currently belongs to.
+/// Defines which Workspace an entity currently belongs to.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct RoomMembership(pub NetworkId);
+pub struct WorkspaceMembership(pub NetworkId);
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
@@ -606,24 +617,30 @@ mod tests {
     }
 
     #[test]
-    fn test_ship_stats_non_zero_default() {
-        let stats = ShipStats::default();
-        assert!(stats.max_hp > 0);
-        assert!(stats.max_shield > 0);
-        assert!(stats.max_energy > 0);
-        assert_eq!(stats.hp, stats.max_hp);
+    fn test_agent_properties_non_zero_default() {
+        let properties = AgentProperties::default();
+        assert!(properties.max_integrity > 0);
+        assert!(properties.max_priority > 0);
+        assert!(properties.max_energy > 0);
+        assert_eq!(properties.integrity, properties.max_integrity);
     }
 
     #[test]
-    fn test_get_default_stats() {
-        assert_eq!(get_default_stats(ENTITY_TYPE_INTERCEPTOR), (200, 100));
-        assert_eq!(get_default_stats(ENTITY_TYPE_AI_INTERCEPTOR), (200, 100));
-        assert_eq!(get_default_stats(ENTITY_TYPE_DREADNOUGHT), (1500, 500));
-        assert_eq!(get_default_stats(ENTITY_TYPE_HAULER), (600, 200));
-        assert_eq!(get_default_stats(ENTITY_TYPE_ASTEROID), (500, 0));
-        assert_eq!(get_default_stats(ENTITY_TYPE_CARGO_DROP), (1, 0));
-        assert_eq!(get_default_stats(ENTITY_TYPE_TRAINING_DUMMY), (100, 50));
-        assert_eq!(get_default_stats(ENTITY_TYPE_PROJECTILE), (1, 0));
-        assert_eq!(get_default_stats(999), (100, 100)); // Default fallback
+    fn test_get_default_properties() {
+        assert_eq!(get_default_properties(ENTITY_TYPE_AGENT), (200, 100));
+        assert_eq!(get_default_properties(ENTITY_TYPE_AI_AGENT), (200, 100));
+        assert_eq!(get_default_properties(ENTITY_TYPE_HEAVY_AGENT), (1500, 500));
+        assert_eq!(
+            get_default_properties(ENTITY_TYPE_CARRIER_AGENT),
+            (600, 200)
+        );
+        assert_eq!(get_default_properties(ENTITY_TYPE_RESOURCE), (500, 0));
+        assert_eq!(get_default_properties(ENTITY_TYPE_DATA_DROP), (1, 0));
+        assert_eq!(
+            get_default_properties(ENTITY_TYPE_TRAINING_TARGET),
+            (100, 50)
+        );
+        assert_eq!(get_default_properties(ENTITY_TYPE_BEAM), (1, 0));
+        assert_eq!(get_default_properties(999), (100, 100)); // Default fallback
     }
 }

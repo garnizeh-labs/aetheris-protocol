@@ -2,12 +2,12 @@ use crate::types::{ClientId, ComponentKind, NetworkId};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// A reliable discrete game event (Phase 1 / VS-02).
+/// A reliable discrete platform event (Phase 1 / VS-02).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum GameEvent {
-    /// An asteroid was completely depleted of its ore.
-    AsteroidDepleted {
-        /// The network ID of the asteroid that was depleted.
+pub enum PlatformEvent {
+    /// A resource was completely exhausted of its payload.
+    ResourceExhausted {
+        /// The network ID of the resource that was exhausted.
         network_id: NetworkId,
     },
     /// Explicitly informs a client that they now own/control a specific entity.
@@ -16,34 +16,34 @@ pub enum GameEvent {
         network_id: NetworkId,
     },
     /// Sends extensible server-side metadata (versions, counters, debug data).
-    SystemManifest {
+    WorkspaceManifest {
         /// The collection of metadata key-value pairs.
         manifest: BTreeMap<String, String>,
     },
-    /// Damage applied to an entity.
-    DamageEvent {
+    /// Interaction (e.g. damage) applied to an entity.
+    InteractionEvent {
         source: NetworkId,
         target: NetworkId,
         amount: u16,
     },
-    /// An entity has been destroyed.
-    DeathEvent { target: NetworkId },
-    /// An entity has respawned.
-    RespawnEvent { target: NetworkId, x: f32, y: f32 },
-    /// A cargo drop was collected by a ship.
-    CargoCollected {
-        /// The network ID of the cargo drop that was collected.
+    /// An entity has been terminated.
+    TerminationEvent { target: NetworkId },
+    /// An entity has been reinitialized.
+    ReinitializationEvent { target: NetworkId, x: f32, y: f32 },
+    /// A data drop was collected by an agent.
+    PayloadCollected {
+        /// The network ID of the data drop that was collected.
         network_id: NetworkId,
-        /// The amount of ore collected.
+        /// The amount of payload collected.
         amount: u16,
     },
 }
 
-impl GameEvent {
-    /// Converts a `GameEvent` into a `WireEvent`.
+impl PlatformEvent {
+    /// Converts a `PlatformEvent` into a `WireEvent`.
     #[must_use]
     pub fn into_wire_event(self) -> WireEvent {
-        WireEvent::GameEvent(self)
+        WireEvent::PlatformEvent(self)
     }
 }
 
@@ -139,6 +139,22 @@ pub enum NetworkEvent {
         /// The original tick/timestamp from the ping.
         tick: u64,
     },
+    /// A new entity has been spawned in the world.
+    EntitySpawned {
+        /// The client involved in the spawn (or targeted).
+        client_id: ClientId,
+        /// The unique network identifier for the entity.
+        network_id: NetworkId,
+        /// The kind/type of entity being spawned.
+        kind: u16,
+    },
+    /// An entity has been despawned from the world.
+    EntityDespawned {
+        /// The client involved in the despawn (or targeted).
+        client_id: ClientId,
+        /// The network identifier of the entity to remove.
+        network_id: NetworkId,
+    },
     /// A session authentication request from the client.
     Auth {
         /// The session token obtained from the Control Plane.
@@ -182,24 +198,24 @@ pub enum NetworkEvent {
         /// The client that requested the clear.
         client_id: ClientId,
     },
-    /// Client requests to start a gameplay session: spawns the session ship and grants Possession.
+    /// Client requests to start a gameplay session: spawns the session agent and grants Possession.
     StartSession {
         /// The client starting the session.
         client_id: ClientId,
     },
-    /// A request from a client to receive the current system manifest.
-    RequestSystemManifest {
+    /// A request from a client to receive the current workspace manifest.
+    RequestWorkspaceManifest {
         /// The client that requested the manifest.
         client_id: ClientId,
     },
     /// A local event indicating the client transport has been disconnected.
     Disconnected(ClientId),
-    /// A discrete game event (e.g. depletion, destruction).
-    GameEvent {
+    /// A discrete platform event (e.g. exhaustion, termination).
+    PlatformEvent {
         /// The client involved (or targeted).
         client_id: ClientId,
         /// The event data.
-        event: GameEvent,
+        event: PlatformEvent,
     },
     /// A batch of replication updates sent together to save bandwidth/packets.
     ReplicationBatch {
@@ -223,8 +239,10 @@ impl NetworkEvent {
             | Self::Spawn { .. }
             | Self::ClearWorld { .. }
             | Self::StartSession { .. }
-            | Self::RequestSystemManifest { .. }
-            | Self::GameEvent { .. }
+            | Self::RequestWorkspaceManifest { .. }
+            | Self::EntitySpawned { .. }
+            | Self::EntityDespawned { .. }
+            | Self::PlatformEvent { .. }
             | Self::ReplicationBatch { .. } => true,
             Self::ClientConnected(_)
             | Self::ClientDisconnected(_)
@@ -278,12 +296,24 @@ pub enum WireEvent {
     },
     /// A command to clear all entities from the world.
     ClearWorld,
-    /// Client requests to start a gameplay session: spawns the session ship and grants Possession.
+    /// A new entity has been spawned.
+    EntitySpawned {
+        /// The entity ID.
+        network_id: NetworkId,
+        /// The entity type.
+        kind: u16,
+    },
+    /// An entity has been despawned.
+    EntityDespawned {
+        /// The entity ID.
+        network_id: NetworkId,
+    },
+    /// Client requests to start a gameplay session: spawns the session agent and grants Possession.
     StartSession,
-    /// A request to receive the current system manifest.
-    RequestSystemManifest,
-    /// A discrete game event.
-    GameEvent(GameEvent),
+    /// A request to receive the current workspace manifest.
+    RequestWorkspaceManifest,
+    /// A discrete platform event.
+    PlatformEvent(PlatformEvent),
     /// A batch of replication updates.
     ReplicationBatch(Vec<ReplicationEvent>),
 }
@@ -319,8 +349,17 @@ impl WireEvent {
             },
             Self::ClearWorld => NetworkEvent::ClearWorld { client_id },
             Self::StartSession => NetworkEvent::StartSession { client_id },
-            Self::RequestSystemManifest => NetworkEvent::RequestSystemManifest { client_id },
-            Self::GameEvent(event) => NetworkEvent::GameEvent { client_id, event },
+            Self::RequestWorkspaceManifest => NetworkEvent::RequestWorkspaceManifest { client_id },
+            Self::PlatformEvent(event) => NetworkEvent::PlatformEvent { client_id, event },
+            Self::EntitySpawned { network_id, kind } => NetworkEvent::EntitySpawned {
+                client_id,
+                network_id,
+                kind,
+            },
+            Self::EntityDespawned { network_id } => NetworkEvent::EntityDespawned {
+                client_id,
+                network_id,
+            },
             Self::ReplicationBatch(events) => NetworkEvent::ReplicationBatch { client_id, events },
         }
     }
@@ -340,9 +379,9 @@ mod tests {
             .is_wire()
         );
         assert!(
-            NetworkEvent::GameEvent {
+            NetworkEvent::PlatformEvent {
                 client_id: ClientId(1),
-                event: GameEvent::AsteroidDepleted {
+                event: PlatformEvent::ResourceExhausted {
                     network_id: NetworkId(1)
                 }
             }
@@ -361,13 +400,13 @@ mod tests {
 
     #[test]
     fn test_wire_event_conversion_roundtrip() {
-        let wire = WireEvent::GameEvent(GameEvent::AsteroidDepleted {
+        let wire = WireEvent::PlatformEvent(PlatformEvent::ResourceExhausted {
             network_id: NetworkId(42),
         });
         let client_id = ClientId(7);
         let network = wire.clone().into_network_event(client_id);
 
-        if let NetworkEvent::GameEvent {
+        if let NetworkEvent::PlatformEvent {
             client_id: cid,
             event,
         } = network
@@ -375,12 +414,12 @@ mod tests {
             assert_eq!(cid, client_id);
             assert_eq!(
                 event,
-                GameEvent::AsteroidDepleted {
+                PlatformEvent::ResourceExhausted {
                     network_id: NetworkId(42)
                 }
             );
         } else {
-            panic!("Conversion failed to preserve GameEvent variant");
+            panic!("Conversion failed to preserve PlatformEvent variant");
         }
 
         // Test ReplicationBatch conversion

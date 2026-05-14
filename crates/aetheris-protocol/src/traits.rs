@@ -23,7 +23,7 @@ pub use crate::types::{ClientId, LocalId, NetworkId, NetworkIdAllocator};
 ///   events (damage, death, loot) where loss would desync the client.
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-pub trait GameTransport: Sync + GameTransportBounds {
+pub trait PlatformTransport: Sync + PlatformTransportBounds {
     /// Sends an unreliable datagram to a specific client.
     ///
     /// Returns immediately. The transport layer may silently drop this packet
@@ -64,20 +64,25 @@ pub trait GameTransport: Sync + GameTransportBounds {
     /// state corruption (e.g. mutex poisoning).
     async fn poll_events(&mut self) -> Result<Vec<NetworkEvent>, TransportError>;
 
+    /// Forcibly disconnects a client.
+    ///
+    /// This immediately terminates the underlying session.
+    async fn disconnect(&self, client_id: ClientId) -> Result<(), TransportError>;
+
     /// Returns the number of currently connected clients.
     async fn connected_client_count(&self) -> usize;
 }
 
-/// Helper trait to provide conditional `Send` bounds for [`GameTransport`].
+/// Helper trait to provide conditional `Send` bounds for [`PlatformTransport`].
 #[cfg(target_arch = "wasm32")]
-pub trait GameTransportBounds {}
+pub trait PlatformTransportBounds {}
 #[cfg(target_arch = "wasm32")]
-impl<T: ?Sized> GameTransportBounds for T {}
+impl<T: ?Sized> PlatformTransportBounds for T {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub trait GameTransportBounds: Send {}
+pub trait PlatformTransportBounds: Send {}
 #[cfg(not(target_arch = "wasm32"))]
-impl<T: ?Sized + Send> GameTransportBounds for T {}
+impl<T: ?Sized + Send> PlatformTransportBounds for T {}
 
 /// The ECS Facade. Translates between the engine's protocol-level types
 /// and the concrete ECS's internal representation.
@@ -175,14 +180,14 @@ pub trait WorldState: Send {
         self.spawn_kind(kind, x, y, rot)
     }
 
-    /// Spawns the authoritative session ship for a client and marks it as
+    /// Spawns the authoritative session agent for a client and marks it as
     /// the possession target.
     ///
-    /// The default implementation delegates to `spawn_kind_for`.  Adapters
-    /// that support a `SessionShip` marker component should override this to
+    /// The default implementation delegates to `spawn_kind_for`. Adapters
+    /// that support a `SessionAgent` marker component should override this to
     /// attach that marker so the input pipeline can gate `InputCommand`
-    /// processing exclusively to the session ship.
-    fn spawn_session_ship(
+    /// processing exclusively to the session agent.
+    fn spawn_session_agent(
         &mut self,
         kind: u16,
         x: f32,
@@ -196,24 +201,24 @@ pub trait WorldState: Send {
     /// Despawns all entities from the world.
     fn clear_world(&mut self) {}
 
-    /// Queues a reliable game event to be sent to a specific client (or all if None).
+    /// Queues a reliable platform event to be sent to a specific client (or all if None).
     fn queue_reliable_event(
         &mut self,
         _client_id: Option<ClientId>,
-        _event: crate::events::GameEvent,
+        _event: crate::events::PlatformEvent,
     ) {
     }
 
     /// Setups the initial world state (e.g. Master Room).
     fn setup_world(&mut self) {}
 
-    /// Returns the Room `network_id` for a given entity, if any.
-    fn get_entity_room(&self, _network_id: NetworkId) -> Option<NetworkId> {
+    /// Returns the Workspace `network_id` for a given entity, if any.
+    fn get_entity_workspace(&self, _network_id: NetworkId) -> Option<NetworkId> {
         None
     }
 
-    /// Returns the Room `network_id` for a client's session ship, if any.
-    fn get_client_room(&self, _client_id: ClientId) -> Option<NetworkId> {
+    /// Returns the Workspace `network_id` for a client's session agent, if any.
+    fn get_client_workspace(&self, _client_id: ClientId) -> Option<NetworkId> {
         None
     }
 
