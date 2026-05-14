@@ -77,7 +77,7 @@ impl SerdeEncoder {
 
     fn to_wire_event(event: &NetworkEvent) -> Result<WireEvent, EncodeError> {
         Ok(match event {
-            NetworkEvent::Ping { tick, .. } if event.is_wire() => WireEvent::Ping { tick: *tick },
+            NetworkEvent::Ping { tick, .. } => WireEvent::Ping { tick: *tick },
             NetworkEvent::Pong { tick } => WireEvent::Pong { tick: *tick },
             NetworkEvent::Auth { session_token } => WireEvent::Auth {
                 session_token: session_token.clone(),
@@ -115,7 +115,15 @@ impl SerdeEncoder {
             NetworkEvent::ReplicationBatch { events, .. } => {
                 WireEvent::ReplicationBatch(events.clone())
             }
-            _ => {
+            // NOTE: When adding new NetworkEvent variants, ensure they are handled here.
+            // Local-only variants should be added to the error arm below.
+            NetworkEvent::ClientConnected(_)
+            | NetworkEvent::ClientDisconnected(_)
+            | NetworkEvent::UnreliableMessage { .. }
+            | NetworkEvent::ReliableMessage { .. }
+            | NetworkEvent::SessionClosed(_)
+            | NetworkEvent::StreamReset(_)
+            | NetworkEvent::Disconnected(_) => {
                 return Err(EncodeError::Io(std::io::Error::other(format!(
                     "Cannot encode local-only variant as wire event: {event:?}"
                 ))));
@@ -474,17 +482,17 @@ mod tests {
                 network_id: NetworkId(456),
             },
             PlatformEvent::WorkspaceManifest {
-                manifest: BTreeMap::new(),
+                manifest: BTreeMap::from([("test_key".to_string(), "test_value".to_string())]),
             },
-            PlatformEvent::InteractionEvent {
+            PlatformEvent::Interaction {
                 source: NetworkId(1),
                 target: NetworkId(2),
                 amount: 10,
             },
-            PlatformEvent::TerminationEvent {
+            PlatformEvent::Termination {
                 target: NetworkId(3),
             },
-            PlatformEvent::ReinitializationEvent {
+            PlatformEvent::Reinitialization {
                 target: NetworkId(4),
                 x: 10.5,
                 y: 20.2,

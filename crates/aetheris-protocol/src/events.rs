@@ -21,15 +21,15 @@ pub enum PlatformEvent {
         manifest: BTreeMap<String, String>,
     },
     /// Interaction (e.g. damage) applied to an entity.
-    InteractionEvent {
+    Interaction {
         source: NetworkId,
         target: NetworkId,
         amount: u16,
     },
     /// An entity has been terminated.
-    TerminationEvent { target: NetworkId },
+    Termination { target: NetworkId },
     /// An entity has been reinitialized.
-    ReinitializationEvent { target: NetworkId, x: f32, y: f32 },
+    Reinitialization { target: NetworkId, x: f32, y: f32 },
     /// A data drop was collected by an agent.
     PayloadCollected {
         /// The network ID of the data drop that was collected.
@@ -104,7 +104,7 @@ impl From<ReplicationEvent> for ComponentUpdate {
     }
 }
 
-/// Events produced by `GameTransport::poll_events()`.
+/// Events produced by `PlatformTransport::poll_events()`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum NetworkEvent {
     /// A new client has connected and been assigned a `ClientId`.
@@ -396,6 +396,24 @@ mod tests {
         );
         assert!(!NetworkEvent::ClientConnected(ClientId(1)).is_wire());
         assert!(!NetworkEvent::ClientDisconnected(ClientId(1)).is_wire());
+        assert!(!NetworkEvent::Disconnected(ClientId(1)).is_wire());
+
+        // Test new wire events
+        assert!(NetworkEvent::EntitySpawned {
+            client_id: ClientId(1),
+            network_id: NetworkId(1),
+            kind: 1
+        }
+        .is_wire());
+        assert!(NetworkEvent::EntityDespawned {
+            client_id: ClientId(1),
+            network_id: NetworkId(1)
+        }
+        .is_wire());
+        assert!(NetworkEvent::RequestWorkspaceManifest {
+            client_id: ClientId(1)
+        }
+        .is_wire());
     }
 
     #[test]

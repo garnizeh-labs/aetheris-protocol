@@ -70,6 +70,8 @@ pub const INTEGRITY_POOL_KIND: ComponentKind = ComponentKind(1029);
 pub const DATA_DROP_KIND: ComponentKind = ComponentKind(1030);
 
 /// Replicated component for beam marker state.
+///
+/// NOTE: This is intentionally an Engine Core foundational component (Kind < 1024).
 pub const BEAM_MARKER_KIND: ComponentKind = ComponentKind(13);
 
 /// Action bitflag: use primary tool.
@@ -215,13 +217,16 @@ impl InputCommand {
     #[must_use]
     pub fn clamped(mut self) -> Self {
         for action in &mut self.actions {
-            if let PlayerInputKind::Move { x, y } = action {
-                *x = x.clamp(-1.0, 1.0);
-                *y = y.clamp(-1.0, 1.0);
-            }
-            if let PlayerInputKind::CursorMove { x, y } = action {
-                *x = x.clamp(0.0, 1.0);
-                *y = y.clamp(0.0, 1.0);
+            match action {
+                PlayerInputKind::Move { x, y } => {
+                    *x = x.clamp(-1.0, 1.0);
+                    *y = y.clamp(-1.0, 1.0);
+                }
+                PlayerInputKind::CursorMove { x, y } => {
+                    *x = x.clamp(0.0, 1.0);
+                    *y = y.clamp(0.0, 1.0);
+                }
+                PlayerInputKind::ToggleExtraction { .. } | PlayerInputKind::FireTool => {}
             }
         }
         self
@@ -353,6 +358,16 @@ pub struct WorkspaceStringError {
 #[serde(try_from = "String", into = "String")]
 pub struct WorkspaceName(String);
 
+fn validate_workspace_string(s: &str) -> Result<(), WorkspaceStringError> {
+    if s.len() > MAX_WORKSPACE_STRING_BYTES {
+        return Err(WorkspaceStringError {
+            len: s.len(),
+            max: MAX_WORKSPACE_STRING_BYTES,
+        });
+    }
+    Ok(())
+}
+
 impl WorkspaceName {
     /// Creates a `WorkspaceName`, returning [`WorkspaceStringError`] if `s` exceeds
     /// [`MAX_WORKSPACE_STRING_BYTES`] bytes.
@@ -364,12 +379,7 @@ impl WorkspaceName {
     #[must_use = "the validated WorkspaceName must be used"]
     pub fn new(s: impl Into<String>) -> Result<Self, WorkspaceStringError> {
         let s = s.into();
-        if s.len() > MAX_WORKSPACE_STRING_BYTES {
-            return Err(WorkspaceStringError {
-                len: s.len(),
-                max: MAX_WORKSPACE_STRING_BYTES,
-            });
-        }
+        validate_workspace_string(&s)?;
         Ok(Self(s))
     }
 
@@ -420,12 +430,7 @@ impl PermissionString {
     #[must_use = "the validated PermissionString must be used"]
     pub fn new(s: impl Into<String>) -> Result<Self, WorkspaceStringError> {
         let s = s.into();
-        if s.len() > MAX_WORKSPACE_STRING_BYTES {
-            return Err(WorkspaceStringError {
-                len: s.len(),
-                max: MAX_WORKSPACE_STRING_BYTES,
-            });
-        }
+        validate_workspace_string(&s)?;
         Ok(Self(s))
     }
 

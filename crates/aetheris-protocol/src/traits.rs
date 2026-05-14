@@ -67,6 +67,10 @@ pub trait PlatformTransport: Sync + PlatformTransportBounds {
     /// Forcibly disconnects a client.
     ///
     /// This immediately terminates the underlying session.
+    ///
+    /// # Errors
+    /// Returns `TransportError::ClientNotConnected` if the `client_id` is unknown,
+    /// or `TransportError::Io` on underlying transport failure.
     async fn disconnect(&self, client_id: ClientId) -> Result<(), TransportError>;
 
     /// Returns the number of currently connected clients.
@@ -209,7 +213,7 @@ pub trait WorldState: Send {
     ) {
     }
 
-    /// Setups the initial world state (e.g. Master Room).
+    /// Sets up the initial world state (e.g. Master Workspace).
     fn setup_world(&mut self) {}
 
     /// Returns the Workspace `network_id` for a given entity, if any.

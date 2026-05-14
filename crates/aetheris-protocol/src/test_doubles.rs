@@ -79,7 +79,7 @@ impl MockTransport {
     ///
     /// # Panics
     /// Panics if any of the internal mutexes are poisoned.
-    pub fn disconnect(&self, client_id: ClientId) {
+    pub fn disconnect_client(&self, client_id: ClientId) {
         self.connected_clients.lock().unwrap().remove(&client_id);
         self.per_client_unreliable
             .lock()
@@ -179,7 +179,7 @@ impl PlatformTransport for MockTransport {
     }
 
     async fn disconnect(&self, client_id: ClientId) -> Result<(), TransportError> {
-        self.disconnect(client_id);
+        self.disconnect_client(client_id);
         Ok(())
     }
 }
@@ -447,7 +447,7 @@ impl Encoder for MockEncoder {
             NetworkEvent::RequestWorkspaceManifest { .. } => Ok(vec![b'M']),
             NetworkEvent::ClearWorld { .. } => Ok(vec![b'C']),
             NetworkEvent::Fragment { .. } => Ok(vec![b'F']),
-            NetworkEvent::PlatformEvent { .. } => Ok(vec![b'G']),
+            NetworkEvent::PlatformEvent { .. } => Ok(vec![b'P']),
             NetworkEvent::ReplicationBatch { events, .. } => {
                 if events.is_empty() {
                     Ok(vec![b'B'])
