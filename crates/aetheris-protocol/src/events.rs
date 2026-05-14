@@ -399,21 +399,27 @@ mod tests {
         assert!(!NetworkEvent::Disconnected(ClientId(1)).is_wire());
 
         // Test new wire events
-        assert!(NetworkEvent::EntitySpawned {
-            client_id: ClientId(1),
-            network_id: NetworkId(1),
-            kind: 1
-        }
-        .is_wire());
-        assert!(NetworkEvent::EntityDespawned {
-            client_id: ClientId(1),
-            network_id: NetworkId(1)
-        }
-        .is_wire());
-        assert!(NetworkEvent::RequestWorkspaceManifest {
-            client_id: ClientId(1)
-        }
-        .is_wire());
+        assert!(
+            NetworkEvent::EntitySpawned {
+                client_id: ClientId(1),
+                network_id: NetworkId(1),
+                kind: 1
+            }
+            .is_wire()
+        );
+        assert!(
+            NetworkEvent::EntityDespawned {
+                client_id: ClientId(1),
+                network_id: NetworkId(1)
+            }
+            .is_wire()
+        );
+        assert!(
+            NetworkEvent::RequestWorkspaceManifest {
+                client_id: ClientId(1)
+            }
+            .is_wire()
+        );
     }
 
     #[test]
