@@ -77,7 +77,7 @@ impl SerdeEncoder {
 
     fn to_wire_event(event: &NetworkEvent) -> Result<WireEvent, EncodeError> {
         Ok(match event {
-            NetworkEvent::Ping { tick, .. } if event.is_wire() => WireEvent::Ping { tick: *tick },
+            NetworkEvent::Ping { tick, .. } => WireEvent::Ping { tick: *tick },
             NetworkEvent::Pong { tick } => WireEvent::Pong { tick: *tick },
             NetworkEvent::Auth { session_token } => WireEvent::Auth {
                 session_token: session_token.clone(),
@@ -101,12 +101,29 @@ impl SerdeEncoder {
             },
             NetworkEvent::ClearWorld { .. } => WireEvent::ClearWorld,
             NetworkEvent::StartSession { .. } => WireEvent::StartSession,
-            NetworkEvent::RequestSystemManifest { .. } => WireEvent::RequestSystemManifest,
-            NetworkEvent::GameEvent { event, .. } => WireEvent::GameEvent(event.clone()),
+            NetworkEvent::RequestWorkspaceManifest { .. } => WireEvent::RequestWorkspaceManifest,
+            NetworkEvent::PlatformEvent { event, .. } => WireEvent::PlatformEvent(event.clone()),
+            NetworkEvent::EntitySpawned {
+                network_id, kind, ..
+            } => WireEvent::EntitySpawned {
+                network_id: *network_id,
+                kind: *kind,
+            },
+            NetworkEvent::EntityDespawned { network_id, .. } => WireEvent::EntityDespawned {
+                network_id: *network_id,
+            },
             NetworkEvent::ReplicationBatch { events, .. } => {
                 WireEvent::ReplicationBatch(events.clone())
             }
-            _ => {
+            // NOTE: When adding new NetworkEvent variants, ensure they are handled here.
+            // Local-only variants should be added to the error arm below.
+            NetworkEvent::ClientConnected(_)
+            | NetworkEvent::ClientDisconnected(_)
+            | NetworkEvent::UnreliableMessage { .. }
+            | NetworkEvent::ReliableMessage { .. }
+            | NetworkEvent::SessionClosed(_)
+            | NetworkEvent::StreamReset(_)
+            | NetworkEvent::Disconnected(_) => {
                 return Err(EncodeError::Io(std::io::Error::other(format!(
                     "Cannot encode local-only variant as wire event: {event:?}"
                 ))));
@@ -163,12 +180,21 @@ impl SerdeEncoder {
             WireEvent::StartSession => NetworkEvent::StartSession {
                 client_id: ClientId(0),
             },
-            WireEvent::RequestSystemManifest => NetworkEvent::RequestSystemManifest {
+            WireEvent::RequestWorkspaceManifest => NetworkEvent::RequestWorkspaceManifest {
                 client_id: ClientId(0),
             },
-            WireEvent::GameEvent(event) => NetworkEvent::GameEvent {
+            WireEvent::PlatformEvent(event) => NetworkEvent::PlatformEvent {
                 client_id: ClientId(0),
                 event,
+            },
+            WireEvent::EntitySpawned { network_id, kind } => NetworkEvent::EntitySpawned {
+                client_id: ClientId(0),
+                network_id,
+                kind,
+            },
+            WireEvent::EntityDespawned { network_id } => NetworkEvent::EntityDespawned {
+                client_id: ClientId(0),
+                network_id,
             },
             WireEvent::ReplicationBatch(events) => NetworkEvent::ReplicationBatch {
                 client_id: ClientId(0),
@@ -441,52 +467,52 @@ mod tests {
     }
 
     #[test]
-    fn test_game_event_roundtrip() {
-        use aetheris_protocol::events::GameEvent;
+    fn test_platform_event_roundtrip() {
+        use aetheris_protocol::events::PlatformEvent;
         use aetheris_protocol::types::NetworkId;
         use std::collections::BTreeMap;
 
         let encoder = SerdeEncoder::new();
 
         let test_events = vec![
-            GameEvent::AsteroidDepleted {
+            PlatformEvent::ResourceExhausted {
                 network_id: NetworkId(123),
             },
-            GameEvent::Possession {
+            PlatformEvent::Possession {
                 network_id: NetworkId(456),
             },
-            GameEvent::SystemManifest {
-                manifest: BTreeMap::new(),
+            PlatformEvent::WorkspaceManifest {
+                manifest: BTreeMap::from([("test_key".to_string(), "test_value".to_string())]),
             },
-            GameEvent::DamageEvent {
+            PlatformEvent::Interaction {
                 source: NetworkId(1),
                 target: NetworkId(2),
                 amount: 10,
             },
-            GameEvent::DeathEvent {
+            PlatformEvent::Termination {
                 target: NetworkId(3),
             },
-            GameEvent::RespawnEvent {
+            PlatformEvent::Reinitialization {
                 target: NetworkId(4),
                 x: 10.5,
                 y: 20.2,
             },
-            GameEvent::CargoCollected {
+            PlatformEvent::PayloadCollected {
                 network_id: NetworkId(5),
                 amount: 50,
             },
         ];
 
-        for game_event in test_events {
-            let event = NetworkEvent::GameEvent {
+        for platform_event in test_events {
+            let event = NetworkEvent::PlatformEvent {
                 client_id: ClientId(1),
-                event: game_event.clone(),
+                event: platform_event.clone(),
             };
 
             let output = encoder.encode_event(&event).unwrap();
             let decoded = encoder.decode_event(&output).unwrap();
 
-            if let NetworkEvent::GameEvent {
+            if let NetworkEvent::PlatformEvent {
                 client_id,
                 event: decoded_event,
             } = decoded
@@ -497,11 +523,11 @@ mod tests {
                     "Wire decoding should default client_id to 0"
                 );
                 assert_eq!(
-                    decoded_event, game_event,
-                    "Roundtrip failed for {game_event:?}"
+                    decoded_event, platform_event,
+                    "Roundtrip failed for {platform_event:?}"
                 );
             } else {
-                panic!("Decoded event is not a GameEvent: {decoded:?}");
+                panic!("Decoded event is not a PlatformEvent: {decoded:?}");
             }
         }
     }

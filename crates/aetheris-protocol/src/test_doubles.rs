@@ -9,7 +9,7 @@ use async_trait::async_trait;
 
 use crate::error::{EncodeError, TransportError, WorldError};
 use crate::events::{ComponentUpdate, NetworkEvent, ReplicationEvent};
-use crate::traits::{Encoder, GameTransport, WorldState};
+use crate::traits::{Encoder, PlatformTransport, WorldState};
 use crate::types::{ClientId, ComponentKind, LocalId, NetworkId};
 
 /// Mock network transport layer that records outbound sent data
@@ -79,7 +79,7 @@ impl MockTransport {
     ///
     /// # Panics
     /// Panics if any of the internal mutexes are poisoned.
-    pub fn disconnect(&self, client_id: ClientId) {
+    pub fn disconnect_client(&self, client_id: ClientId) {
         self.connected_clients.lock().unwrap().remove(&client_id);
         self.per_client_unreliable
             .lock()
@@ -91,7 +91,7 @@ impl MockTransport {
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl GameTransport for MockTransport {
+impl PlatformTransport for MockTransport {
     async fn send_unreliable(
         &self,
         client_id: ClientId,
@@ -176,6 +176,11 @@ impl GameTransport for MockTransport {
 
     async fn connected_client_count(&self) -> usize {
         self.connected_clients.lock().unwrap().len()
+    }
+
+    async fn disconnect(&self, client_id: ClientId) -> Result<(), TransportError> {
+        self.disconnect_client(client_id);
+        Ok(())
     }
 }
 
@@ -296,7 +301,7 @@ impl WorldState for MockWorldState {
         self.spawn_networked()
     }
 
-    fn spawn_session_ship(
+    fn spawn_session_agent(
         &mut self,
         _kind: u16,
         _x: f32,
@@ -310,7 +315,7 @@ impl WorldState for MockWorldState {
     fn queue_reliable_event(
         &mut self,
         client_id: Option<ClientId>,
-        event: crate::events::GameEvent,
+        event: crate::events::PlatformEvent,
     ) {
         self.pending_reliable
             .lock()
@@ -439,10 +444,10 @@ impl Encoder for MockEncoder {
         match event {
             NetworkEvent::Auth { .. } => Ok(vec![b'A']),
             NetworkEvent::StartSession { .. } => Ok(vec![b'S']),
-            NetworkEvent::RequestSystemManifest { .. } => Ok(vec![b'M']),
+            NetworkEvent::RequestWorkspaceManifest { .. } => Ok(vec![b'M']),
             NetworkEvent::ClearWorld { .. } => Ok(vec![b'C']),
             NetworkEvent::Fragment { .. } => Ok(vec![b'F']),
-            NetworkEvent::GameEvent { .. } => Ok(vec![b'G']),
+            NetworkEvent::PlatformEvent { .. } => Ok(vec![b'P']),
             NetworkEvent::ReplicationBatch { events, .. } => {
                 if events.is_empty() {
                     Ok(vec![b'B'])
@@ -512,7 +517,7 @@ mod tests {
     use super::*;
 
     #[allow(dead_code)]
-    const fn assert_transport_bounds<T: GameTransport>() {}
+    const fn assert_transport_bounds<T: PlatformTransport>() {}
     #[allow(dead_code)]
     const fn assert_world_bounds<T: WorldState>() {}
     #[allow(dead_code)]
