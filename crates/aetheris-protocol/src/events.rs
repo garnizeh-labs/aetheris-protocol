@@ -139,22 +139,6 @@ pub enum NetworkEvent {
         /// The original tick/timestamp from the ping.
         tick: u64,
     },
-    /// A new entity has been spawned in the world.
-    EntitySpawned {
-        /// The client involved in the spawn (or targeted).
-        client_id: ClientId,
-        /// The unique network identifier for the entity.
-        network_id: NetworkId,
-        /// The kind/type of entity being spawned.
-        kind: u16,
-    },
-    /// An entity has been despawned from the world.
-    EntityDespawned {
-        /// The client involved in the despawn (or targeted).
-        client_id: ClientId,
-        /// The network identifier of the entity to remove.
-        network_id: NetworkId,
-    },
     /// A session authentication request from the client.
     Auth {
         /// The session token obtained from the Control Plane.
@@ -223,6 +207,22 @@ pub enum NetworkEvent {
         client_id: ClientId,
         /// The collection of updates.
         events: Vec<ReplicationEvent>,
+    },
+    /// A new entity has been spawned in the world.
+    EntitySpawned {
+        /// The client involved in the spawn (or targeted).
+        client_id: ClientId,
+        /// The unique network identifier for the entity.
+        network_id: NetworkId,
+        /// The kind/type of entity being spawned.
+        kind: u16,
+    },
+    /// An entity has been despawned from the world.
+    EntityDespawned {
+        /// The client involved in the despawn (or targeted).
+        client_id: ClientId,
+        /// The network identifier of the entity to remove.
+        network_id: NetworkId,
     },
 }
 

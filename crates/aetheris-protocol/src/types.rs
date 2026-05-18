@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 /// translates between `NetworkId` and the ECS's local handle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct NetworkId(pub u64);
+/// Minimum ID value for dynamically allocated entities (Agents, Beams, etc).
+/// IDs below this value are reserved for static world infrastructure (Workspaces, Documents).
+pub const MIN_DYNAMIC_NETWORK_ID: u64 = 100;
 
 /// The ECS's internal entity handle. Opaque to the network layer.
 /// In Phase 1 (Bevy), this wraps `bevy_ecs::entity::Entity`.
