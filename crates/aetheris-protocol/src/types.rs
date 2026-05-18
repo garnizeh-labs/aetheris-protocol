@@ -528,14 +528,15 @@ pub struct NetworkIdAllocator {
 
 impl Default for NetworkIdAllocator {
     fn default() -> Self {
-        Self::new(1)
+        Self::new(MIN_DYNAMIC_NETWORK_ID)
     }
 }
 
 impl NetworkIdAllocator {
-    /// Creates a new allocator starting from a specific ID. 0 is reserved.
+    /// Creates a new allocator starting from a specific ID. Must be at least `MIN_DYNAMIC_NETWORK_ID`.
     #[must_use]
     pub fn new(start_id: u64) -> Self {
+        let start_id = start_id.max(MIN_DYNAMIC_NETWORK_ID);
         Self {
             start_id,
             next: AtomicU64::new(start_id),
@@ -650,5 +651,24 @@ mod tests {
         );
         assert_eq!(get_default_properties(ENTITY_TYPE_BEAM), (1, 0));
         assert_eq!(get_default_properties(999), (100, 100)); // Default fallback
+    }
+
+    #[test]
+    fn test_network_id_allocator_boundary() {
+        // Default allocator starts at MIN_DYNAMIC_NETWORK_ID
+        let allocator = NetworkIdAllocator::default();
+        let id1 = allocator.allocate().unwrap();
+        assert_eq!(id1.0, MIN_DYNAMIC_NETWORK_ID);
+
+        // Allocator created with start_id < MIN_DYNAMIC_NETWORK_ID is clamped to MIN_DYNAMIC_NETWORK_ID
+        let allocator_custom = NetworkIdAllocator::new(1);
+        let id_custom = allocator_custom.allocate().unwrap();
+        assert_eq!(id_custom.0, MIN_DYNAMIC_NETWORK_ID);
+
+        // Reset uses the clamped start_id
+        allocator_custom.allocate().unwrap();
+        allocator_custom.reset();
+        let id_reset = allocator_custom.allocate().unwrap();
+        assert_eq!(id_reset.0, MIN_DYNAMIC_NETWORK_ID);
     }
 }
